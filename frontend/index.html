@@ -76,7 +76,8 @@
         </section>
 
         <section id="alerts" class="view hidden">
-          <div class="section-head"><p>New screening signals and monitored changes that require a recorded response.</p><button id="refresh-alerts" class="secondary">Refresh</button></div>
+          <div class="section-head"><p>New screening signals, trade outcomes, and model changes that require a recorded response.</p><div class="row-actions"><button id="run-monitoring" class="primary">Run rescreening</button><button id="run-drift" class="secondary">Check model drift</button><button id="refresh-alerts" class="secondary">Refresh</button></div></div>
+          <div id="monitoring-summary" class="monitoring-grid"></div>
           <div id="alert-cards" class="card-list"></div>
         </section>
 

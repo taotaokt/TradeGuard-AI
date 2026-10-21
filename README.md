@@ -27,7 +27,10 @@ The current version can:
 - provide a responsive browser workspace, dashboard, review queue, and audit trail;
 - export a two-page PDF assessment report with evidence and limitations;
 - create monitoring alerts when a new screening run finds candidate matches; and
-- assign, acknowledge, resolve, dismiss, or launch a versioned reassessment from an alert.
+- assign, acknowledge, resolve, dismiss, or launch a versioned reassessment from an alert;
+- run a scheduler-ready portfolio rescreen that skips counterparties already checked against current lists;
+- record payment delays, disputes, losses, cancellations, and on-time outcomes; and
+- create model-monitoring snapshots for prediction shift, low-confidence rate, Brier score, and calibration gap.
 
 The included model is deliberately trained on generated data. It demonstrates a governed ML workflow, not real creditworthiness or production readiness.
 
@@ -43,6 +46,7 @@ See [REQUIREMENTS.md](./REQUIREMENTS.md) for the full product requirements and w
 - [x] M6: frontend, PDF reports, dashboard, and complete audit interface
 - [x] M7: deployment reference, CI, public demo data, and application materials
 - [x] M8: monitoring alerts, reviewer ownership, and alert-driven reassessment
+- [x] M9: portfolio rescreening, trade outcomes, and model-drift snapshots
 
 ## Run it for the first time
 
@@ -174,6 +178,16 @@ Each screening run that produces one or more candidate matches now creates a mon
 3. Call `POST /api/alerts/{id}/reassess` with a linked transaction ID to create a new immutable assessment version.
 
 The alert closes only after a reviewer records a terminal action or launches the reassessment. Both the alert action and the new assessment are retained in the audit trail.
+
+## Run portfolio and model monitoring
+
+The **Alert center** now includes controls for portfolio rescreening and model-drift checks. The matching API workflow is:
+
+1. Call `POST /api/monitoring/runs/rescreen` after activating a new list version. Counterparties already screened after the latest active-list change are skipped unless `force` is true.
+2. Call `POST /api/transactions/{id}/outcome` when an invoice is paid, delayed, disputed, cancelled, or produces a material loss. Adverse outcomes create a risk-review alert.
+3. Call `POST /api/monitoring/drift-snapshots` to compare the recent prediction window with the model's documented reference rate and any available outcomes.
+
+The synchronous rescreen endpoint is intentionally scheduler-ready: a trusted cron service or managed job runner can invoke it later without moving decision logic out of the application. See [docs/monitoring.md](./docs/monitoring.md) for metrics, thresholds, limitations, and operational guidance.
 
 ## Run the tests
 

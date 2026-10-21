@@ -343,6 +343,59 @@ class Alert(TimestampMixin, Base):
     resolution_rationale: Mapped[Optional[str]] = mapped_column(Text)
 
 
+class MonitoringRun(Base):
+    __tablename__ = "monitoring_runs"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    run_type: Mapped[str] = mapped_column(String(60), index=True, nullable=False)
+    status: Mapped[str] = mapped_column(String(40), index=True, nullable=False)
+    force: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    fuzzy_threshold: Mapped[int] = mapped_column(Integer, nullable=False)
+    list_versions_json: Mapped[str] = mapped_column(Text, default="[]", nullable=False)
+    counters_json: Mapped[str] = mapped_column(Text, default="{}", nullable=False)
+    error_message: Mapped[Optional[str]] = mapped_column(Text)
+    initiated_by_id: Mapped[str] = mapped_column(ForeignKey("users.id"), nullable=False)
+    started_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
+
+
+class Outcome(TimestampMixin, Base):
+    __tablename__ = "outcomes"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    transaction_id: Mapped[str] = mapped_column(
+        ForeignKey("trade_transactions.id"), unique=True, index=True, nullable=False
+    )
+    assessment_id: Mapped[Optional[str]] = mapped_column(ForeignKey("assessments.id"), index=True)
+    outcome_type: Mapped[str] = mapped_column(String(50), index=True, nullable=False)
+    due_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
+    settled_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
+    days_past_due: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    loss_amount: Mapped[Optional[Decimal]] = mapped_column(Numeric(18, 2))
+    currency: Mapped[Optional[str]] = mapped_column(String(3))
+    notes: Mapped[Optional[str]] = mapped_column(Text)
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    reported_by_id: Mapped[str] = mapped_column(ForeignKey("users.id"), nullable=False)
+
+
+class DriftSnapshot(Base):
+    __tablename__ = "drift_snapshots"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    model_version_id: Mapped[str] = mapped_column(
+        ForeignKey("model_versions.id"), index=True, nullable=False
+    )
+    window_start: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    window_end: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    sample_size: Mapped[int] = mapped_column(Integer, nullable=False)
+    labeled_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    status: Mapped[str] = mapped_column(String(40), index=True, nullable=False)
+    metrics_json: Mapped[str] = mapped_column(Text, nullable=False)
+    thresholds_json: Mapped[str] = mapped_column(Text, nullable=False)
+    created_by_id: Mapped[str] = mapped_column(ForeignKey("users.id"), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+
+
 class SupportingDocument(TimestampMixin, Base):
     __tablename__ = "supporting_documents"
     __table_args__ = (

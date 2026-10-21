@@ -2,7 +2,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import List, Literal, Optional
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 class ORMModel(BaseModel):
@@ -383,6 +383,89 @@ class AlertAction(BaseModel):
 class AlertReassessmentRequest(BaseModel):
     transaction_id: Optional[str] = None
     rationale: str = Field(min_length=5, max_length=4000)
+
+
+class MonitoringRunRequest(BaseModel):
+    force: bool = False
+    fuzzy_threshold: int = Field(default=85, ge=50, le=100)
+
+
+class MonitoringRunRead(ORMModel):
+    id: str
+    run_type: str
+    status: str
+    force: bool
+    fuzzy_threshold: int
+    list_versions_json: str
+    counters_json: str
+    error_message: Optional[str]
+    initiated_by_id: str
+    started_at: datetime
+    completed_at: Optional[datetime]
+
+
+class OutcomeCreate(BaseModel):
+    assessment_id: Optional[str] = None
+    outcome_type: Literal["paid_on_time", "delayed", "dispute", "material_loss", "cancelled"]
+    due_at: Optional[datetime] = None
+    settled_at: Optional[datetime] = None
+    days_past_due: int = Field(default=0, ge=0, le=3650)
+    loss_amount: Optional[Decimal] = Field(default=None, ge=0, max_digits=18, decimal_places=2)
+    currency: Optional[str] = Field(default=None, min_length=3, max_length=3)
+    notes: Optional[str] = Field(default=None, max_length=4000)
+
+    @field_validator("currency")
+    @classmethod
+    def normalize_outcome_currency(cls, value: Optional[str]) -> Optional[str]:
+        return value.upper() if value else value
+
+    @model_validator(mode="after")
+    def validate_outcome(self):
+        if self.outcome_type == "paid_on_time" and self.days_past_due:
+            raise ValueError("paid_on_time outcomes cannot have past-due days")
+        if self.outcome_type == "delayed" and self.days_past_due < 1:
+            raise ValueError("delayed outcomes require at least one past-due day")
+        if self.outcome_type == "material_loss" and not self.loss_amount:
+            raise ValueError("material_loss outcomes require a positive loss_amount")
+        if self.loss_amount is not None and self.currency is None:
+            raise ValueError("currency is required when loss_amount is supplied")
+        return self
+
+
+class OutcomeRead(ORMModel):
+    id: str
+    transaction_id: str
+    assessment_id: Optional[str]
+    outcome_type: str
+    due_at: Optional[datetime]
+    settled_at: Optional[datetime]
+    days_past_due: int
+    loss_amount: Optional[Decimal]
+    currency: Optional[str]
+    notes: Optional[str]
+    version: int
+    reported_by_id: str
+    created_at: datetime
+    updated_at: datetime
+
+
+class DriftSnapshotRequest(BaseModel):
+    window_days: int = Field(default=90, ge=1, le=730)
+    minimum_sample_size: int = Field(default=20, ge=5, le=10000)
+
+
+class DriftSnapshotRead(ORMModel):
+    id: str
+    model_version_id: str
+    window_start: datetime
+    window_end: datetime
+    sample_size: int
+    labeled_count: int
+    status: str
+    metrics_json: str
+    thresholds_json: str
+    created_by_id: str
+    created_at: datetime
 
 
 class RuleVersionRead(ORMModel):

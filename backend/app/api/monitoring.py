@@ -1,4 +1,5 @@
-from datetime import datetime
+import json
+from datetime import datetime, timedelta
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -9,19 +10,49 @@ from backend.app.audit import record_audit_event
 from backend.app.db import get_db
 from backend.app.decisioning import assessment_detail_query, orchestrate_assessment
 from backend.app.deps import require_roles
-from backend.app.models import Alert, Assessment, TradeTransaction, User
+from backend.app.drift import calculate_drift_metrics
+from backend.app.models import (
+    Alert,
+    Assessment,
+    Counterparty,
+    DriftSnapshot,
+    ModelVersion,
+    MonitoringRun,
+    Outcome,
+    Prediction,
+    ScreeningList,
+    ScreeningListVersion,
+    ScreeningRun,
+    TradeTransaction,
+    User,
+)
+from backend.app.monitoring import create_outcome_alert
 from backend.app.schemas import (
     AlertAction,
     AlertRead,
     AlertReassessmentRequest,
     AssessmentDetail,
+    DriftSnapshotRead,
+    DriftSnapshotRequest,
+    MonitoringRunRead,
+    MonitoringRunRequest,
+    OutcomeCreate,
+    OutcomeRead,
 )
+from backend.app.screening_service import run_counterparty_screening
 
 
 router = APIRouter(tags=["monitoring"])
-alert_user = require_roles({"admin", "risk_reviewer", "compliance_reviewer"})
+alert_user = require_roles(
+    {"admin", "risk_reviewer", "compliance_reviewer", "model_developer"}
+)
+monitoring_user = require_roles({"admin", "compliance_reviewer"})
+outcome_user = require_roles(
+    {"admin", "business_user", "risk_reviewer", "compliance_reviewer"}
+)
+drift_user = require_roles({"admin", "risk_reviewer", "model_developer"})
 ALERT_STATUSES = {"open", "acknowledged", "resolved", "dismissed"}
-REVIEWER_ROLES = {"admin", "risk_reviewer", "compliance_reviewer"}
+REVIEWER_ROLES = {"admin", "risk_reviewer", "compliance_reviewer", "model_developer"}
 
 
 def _ensure_alert_permission(alert: Alert, user: User) -> None:
@@ -205,3 +236,311 @@ def reassess_from_alert(
     )
     db.commit()
     return db.scalar(assessment_detail_query().where(Assessment.id == assessment.id))
+
+
+@router.post(
+    "/monitoring/runs/rescreen",
+    response_model=MonitoringRunRead,
+    status_code=status.HTTP_201_CREATED,
+)
+def run_portfolio_rescreening(
+    payload: MonitoringRunRequest,
+    db: Session = Depends(get_db),
+    user: User = Depends(monitoring_user),
+) -> MonitoringRun:
+    active_lists = list(
+        db.scalars(select(ScreeningList).where(ScreeningList.active_version_id.is_not(None)))
+    )
+    if not active_lists:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="No active screening-list version is configured",
+        )
+    active_version_ids = [item.active_version_id for item in active_lists]
+    active_versions = list(
+        db.scalars(
+            select(ScreeningListVersion).where(ScreeningListVersion.id.in_(active_version_ids))
+        )
+    )
+    latest_list_change = max(item.created_at for item in active_versions)
+    monitoring_run = MonitoringRun(
+        run_type="portfolio_rescreen",
+        status="running",
+        force=payload.force,
+        fuzzy_threshold=payload.fuzzy_threshold,
+        list_versions_json=json.dumps(sorted(active_version_ids)),
+        initiated_by_id=user.id,
+    )
+    db.add(monitoring_run)
+    db.flush()
+
+    counterparties = list(
+        db.scalars(
+            select(Counterparty)
+            .options(
+                selectinload(Counterparty.aliases),
+                selectinload(Counterparty.related_parties),
+            )
+            .where(Counterparty.status != "archived")
+            .order_by(Counterparty.created_at)
+        ).unique()
+    )
+    processed = 0
+    skipped_current = 0
+    candidate_count = 0
+    for counterparty in counterparties:
+        latest_run = db.scalar(
+            select(ScreeningRun)
+            .where(ScreeningRun.counterparty_id == counterparty.id)
+            .order_by(ScreeningRun.created_at.desc())
+            .limit(1)
+        )
+        if (
+            not payload.force
+            and latest_run is not None
+            and latest_run.created_at >= latest_list_change
+        ):
+            skipped_current += 1
+            continue
+        screening_run = run_counterparty_screening(
+            db,
+            counterparty=counterparty,
+            active_lists=active_lists,
+            user=user,
+            fuzzy_threshold=payload.fuzzy_threshold,
+        )
+        processed += 1
+        candidate_count += len(screening_run.candidates)
+
+    counters = {
+        "eligible_counterparties": len(counterparties),
+        "processed": processed,
+        "skipped_current": skipped_current,
+        "candidate_count": candidate_count,
+    }
+    monitoring_run.status = "completed"
+    monitoring_run.counters_json = json.dumps(counters, sort_keys=True)
+    monitoring_run.completed_at = datetime.utcnow()
+    record_audit_event(
+        db,
+        actor_id=user.id,
+        action="monitoring.portfolio_rescreened",
+        object_type="monitoring_run",
+        object_id=monitoring_run.id,
+        details={**counters, "force": payload.force, "list_version_ids": active_version_ids},
+    )
+    db.commit()
+    db.refresh(monitoring_run)
+    return monitoring_run
+
+
+@router.get("/monitoring/runs", response_model=List[MonitoringRunRead])
+def list_monitoring_runs(
+    limit: int = Query(default=50, ge=1, le=200),
+    db: Session = Depends(get_db),
+    user: User = Depends(monitoring_user),
+) -> List[MonitoringRun]:
+    return list(
+        db.scalars(select(MonitoringRun).order_by(MonitoringRun.started_at.desc()).limit(limit))
+    )
+
+
+@router.post(
+    "/transactions/{transaction_id}/outcome",
+    response_model=OutcomeRead,
+    status_code=status.HTTP_201_CREATED,
+)
+def record_transaction_outcome(
+    transaction_id: str,
+    payload: OutcomeCreate,
+    db: Session = Depends(get_db),
+    user: User = Depends(outcome_user),
+) -> Outcome:
+    transaction = db.scalar(
+        select(TradeTransaction)
+        .options(selectinload(TradeTransaction.parties))
+        .where(TradeTransaction.id == transaction_id)
+    )
+    if transaction is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Transaction not found")
+    if db.scalar(select(Outcome.id).where(Outcome.transaction_id == transaction_id)):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="An outcome is already recorded for this transaction",
+        )
+    if payload.assessment_id:
+        assessment = db.get(Assessment, payload.assessment_id)
+        if assessment is None or assessment.transaction_id != transaction.id:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail="assessment_id must belong to this transaction",
+            )
+
+    outcome = Outcome(
+        **payload.model_dump(),
+        transaction_id=transaction.id,
+        reported_by_id=user.id,
+    )
+    db.add(outcome)
+    db.flush()
+    adverse = (
+        outcome.outcome_type in {"dispute", "material_loss"}
+        or outcome.days_past_due >= 30
+    )
+    if adverse:
+        create_outcome_alert(db, outcome=outcome, transaction=transaction, actor=user)
+        transaction.status = "adverse_outcome"
+    elif outcome.outcome_type in {"paid_on_time", "cancelled"}:
+        transaction.status = "completed"
+    record_audit_event(
+        db,
+        actor_id=user.id,
+        action="transaction.outcome_recorded",
+        object_type="outcome",
+        object_id=outcome.id,
+        details={
+            "transaction_id": transaction.id,
+            "outcome_type": outcome.outcome_type,
+            "days_past_due": outcome.days_past_due,
+            "adverse_alert_created": adverse,
+        },
+    )
+    db.commit()
+    db.refresh(outcome)
+    return outcome
+
+
+@router.get("/transactions/{transaction_id}/outcome", response_model=OutcomeRead)
+def get_transaction_outcome(
+    transaction_id: str,
+    db: Session = Depends(get_db),
+    user: User = Depends(outcome_user),
+) -> Outcome:
+    outcome = db.scalar(select(Outcome).where(Outcome.transaction_id == transaction_id))
+    if outcome is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Outcome not found")
+    return outcome
+
+
+@router.post(
+    "/monitoring/drift-snapshots",
+    response_model=DriftSnapshotRead,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_drift_snapshot(
+    payload: DriftSnapshotRequest,
+    db: Session = Depends(get_db),
+    user: User = Depends(drift_user),
+) -> DriftSnapshot:
+    model_version = db.scalar(
+        select(ModelVersion)
+        .where(ModelVersion.status == "champion")
+        .order_by(ModelVersion.trained_at.desc())
+        .limit(1)
+    )
+    if model_version is None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="No registered champion model is available",
+        )
+    window_end = datetime.utcnow()
+    window_start = window_end - timedelta(days=payload.window_days)
+    rows = db.execute(
+        select(Prediction, Assessment.transaction_id)
+        .join(Assessment, Assessment.id == Prediction.assessment_id)
+        .where(
+            Prediction.model_version_id == model_version.id,
+            Prediction.created_at >= window_start,
+            Prediction.created_at <= window_end,
+        )
+    ).all()
+    prediction_rows = [
+        {
+            "transaction_id": transaction_id,
+            "probability": prediction.probability,
+            "confidence": prediction.confidence,
+            "risk_band": prediction.risk_band,
+        }
+        for prediction, transaction_id in rows
+    ]
+    transaction_ids = {item["transaction_id"] for item in prediction_rows}
+    outcomes = (
+        list(db.scalars(select(Outcome).where(Outcome.transaction_id.in_(transaction_ids))))
+        if transaction_ids
+        else []
+    )
+    metrics_document = json.loads(model_version.metrics_json)
+    reference_metrics = metrics_document.get(model_version.name) or next(
+        iter(metrics_document.values())
+    )
+    drift_status, metrics, thresholds = calculate_drift_metrics(
+        prediction_rows,
+        {item.transaction_id: item for item in outcomes},
+        reference_positive_rate=float(reference_metrics["positive_rate"]),
+        minimum_sample_size=payload.minimum_sample_size,
+    )
+    snapshot = DriftSnapshot(
+        model_version_id=model_version.id,
+        window_start=window_start,
+        window_end=window_end,
+        sample_size=metrics["sample_size"],
+        labeled_count=metrics["labeled_count"],
+        status=drift_status,
+        metrics_json=json.dumps(metrics, sort_keys=True),
+        thresholds_json=json.dumps(thresholds, sort_keys=True),
+        created_by_id=user.id,
+    )
+    db.add(snapshot)
+    db.flush()
+    if drift_status in {"warning", "critical"}:
+        alert = Alert(
+            alert_type="model_drift",
+            severity="critical" if drift_status == "critical" else "medium",
+            required_role="model_developer",
+            title="Model monitoring threshold exceeded",
+            description=(
+                "The {} prediction window produced a {} drift status."
+            ).format(model_version.version, drift_status),
+            created_by_id=user.id,
+            source_reference_json=json.dumps(
+                {"drift_snapshot_id": snapshot.id, "model_version": model_version.version},
+                sort_keys=True,
+            ),
+        )
+        db.add(alert)
+        db.flush()
+        record_audit_event(
+            db,
+            actor_id=user.id,
+            action="alert.created",
+            object_type="alert",
+            object_id=alert.id,
+            details={"alert_type": "model_drift", "drift_snapshot_id": snapshot.id},
+        )
+    record_audit_event(
+        db,
+        actor_id=user.id,
+        action="model.drift_snapshot_created",
+        object_type="drift_snapshot",
+        object_id=snapshot.id,
+        details={
+            "model_version": model_version.version,
+            "status": drift_status,
+            "sample_size": snapshot.sample_size,
+            "labeled_count": snapshot.labeled_count,
+        },
+    )
+    db.commit()
+    db.refresh(snapshot)
+    return snapshot
+
+
+@router.get("/monitoring/drift-snapshots", response_model=List[DriftSnapshotRead])
+def list_drift_snapshots(
+    limit: int = Query(default=50, ge=1, le=200),
+    db: Session = Depends(get_db),
+    user: User = Depends(drift_user),
+) -> List[DriftSnapshot]:
+    return list(
+        db.scalars(select(DriftSnapshot).order_by(DriftSnapshot.created_at.desc()).limit(limit))
+    )

@@ -2,9 +2,9 @@
 
 **Document type:** Product and Software Requirements Specification
 
-**Version:** 1.1
+**Version:** 1.2
 
-**Status:** MVP and M8 monitoring-alert workflow implemented; production validation remains out of scope
+**Status:** MVP through M9 monitoring workflows implemented; production validation remains out of scope
 
 **Date:** 2026-10-21
 
@@ -613,6 +613,12 @@ GET    /api/reviews
 GET    /api/alerts
 POST   /api/alerts/{id}/actions
 POST   /api/alerts/{id}/reassess
+POST   /api/monitoring/runs/rescreen
+GET    /api/monitoring/runs
+POST   /api/transactions/{id}/outcome
+GET    /api/transactions/{id}/outcome
+POST   /api/monitoring/drift-snapshots
+GET    /api/monitoring/drift-snapshots
 
 GET    /api/admin/lists
 POST   /api/admin/lists/{id}/versions

@@ -43,3 +43,13 @@ their source screening run, candidate references, affected transactions, reviewe
 acknowledgement or resolution history. A reviewer can launch a new immutable assessment from an alert;
 the alert stores the resulting assessment ID while audit events preserve the reason and actor. Scheduled
 execution and outbound notifications remain later operational boundaries.
+
+M9 adds a scheduler-ready portfolio rescreening entry point over the same screening service used by
+interactive requests. A run snapshots active list-version IDs, skips counterparties already screened
+after the latest list change, and records processed, skipped, and candidate counts. Previously confirmed
+matches remain compliance holds even when a later run produces no candidates.
+
+Transaction outcomes are stored separately from predictions so estimated risk and observed performance
+cannot be confused. Adverse outcomes create risk-review alerts. Immutable drift snapshots aggregate a
+bounded prediction window, compare its mean with the training reference rate, track low-confidence and
+risk-band distributions, and calculate Brier score and calibration gap when outcomes are available.
