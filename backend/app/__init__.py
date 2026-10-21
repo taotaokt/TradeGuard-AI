@@ -1,0 +1,2 @@
+"""TradeGuard application package."""
+

@@ -1,0 +1,108 @@
+{
+  "all_artifacts": {
+    "logistic_baseline": {
+      "path": "ml/artifacts/logistic_baseline.joblib",
+      "sha256": "f7ef7181caefb135f8d36e00957221286923322d43d475f61cc1bcca9de75f78"
+    },
+    "random_forest_candidate": {
+      "path": "ml/artifacts/random_forest_candidate.joblib",
+      "sha256": "dd12ef7c40f2955d1f481c81f7ca6e91a50471e612719ce7b1c3e10ed0a44600"
+    }
+  },
+  "artifact": {
+    "path": "ml/artifacts/logistic_baseline.joblib",
+    "sha256": "f7ef7181caefb135f8d36e00957221286923322d43d475f61cc1bcca9de75f78"
+  },
+  "artifact_trust": "Load only repository-generated artifacts after SHA-256 verification.",
+  "calibration": "sigmoid, 5-fold cross-validation",
+  "champion_model": "logistic_baseline",
+  "feature_names": [
+    "amount_usd_log",
+    "payment_terms_days",
+    "deposit_percentage",
+    "requested_credit_exposure_ratio",
+    "has_letter_of_credit",
+    "has_transshipment",
+    "counterparty_active",
+    "transaction_document_count",
+    "counterparty_evidence_count"
+  ],
+  "feature_ranges": {
+    "amount_usd_log": {
+      "max": 13.56563206,
+      "min": 6.90875478
+    },
+    "counterparty_active": {
+      "max": 1.0,
+      "min": 0.0
+    },
+    "counterparty_evidence_count": {
+      "max": 8.0,
+      "min": 0.0
+    },
+    "deposit_percentage": {
+      "max": 95.09,
+      "min": 0.61
+    },
+    "has_letter_of_credit": {
+      "max": 1.0,
+      "min": 0.0
+    },
+    "has_transshipment": {
+      "max": 1.0,
+      "min": 0.0
+    },
+    "payment_terms_days": {
+      "max": 120.0,
+      "min": 0.0
+    },
+    "requested_credit_exposure_ratio": {
+      "max": 1.2083054,
+      "min": 0.0
+    },
+    "transaction_document_count": {
+      "max": 9.0,
+      "min": 0.0
+    }
+  },
+  "metrics": {
+    "logistic_baseline": {
+      "average_precision": 0.154422,
+      "brier_score": 0.04815,
+      "expected_calibration_error_10_bins": 0.004248,
+      "log_loss": 0.189004,
+      "positive_rate": 0.053,
+      "precision_at_0_25": 0.266667,
+      "recall_at_0_25": 0.075472,
+      "roc_auc": 0.737642,
+      "test_rows": 1000
+    },
+    "random_forest_candidate": {
+      "average_precision": 0.119058,
+      "brier_score": 0.049013,
+      "expected_calibration_error_10_bins": 0.002331,
+      "log_loss": 0.196821,
+      "positive_rate": 0.053,
+      "precision_at_0_25": 0.0,
+      "recall_at_0_25": 0.0,
+      "roc_auc": 0.681337,
+      "test_rows": 1000
+    }
+  },
+  "model_version": "synthetic-2026-10-21-v1",
+  "random_seed": 20261021,
+  "runtime": {
+    "joblib": "1.5.3",
+    "numpy": "2.0.2",
+    "python": "3.9.6",
+    "scikit_learn": "1.6.1"
+  },
+  "status": "champion",
+  "target_definition": "Synthetic indicator that a trade invoice becomes at least 90 days past due or produces a material payment loss within 180 days after its contractual due date.",
+  "target_name": "severe_delinquency_90d",
+  "test_rows": 1000,
+  "train_rows": 3000,
+  "trained_at": "2026-10-21T16:30:02.336306+00:00",
+  "training_data_checksum": "c6dbf33607303efd40276f9bfdc9c1403c5af4326d0ed239b3609e08643836d7",
+  "training_data_path": "sample-data/ml/synthetic_trade_outcomes.csv"
+}
