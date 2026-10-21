@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="TradeGuard AI cross-border transaction risk workspace" />
+    <title>TradeGuard AI</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <div id="login-view" class="login-shell">
+      <section class="login-copy">
+        <p class="eyebrow">EXPLAINABLE TRADE RISK</p>
+        <h1>Know what needs review before goods move.</h1>
+        <p>Bring counterparties, transaction facts, screening, rules, and a calibrated demo risk model into one auditable workflow.</p>
+        <div class="signal"><span></span> Human decisions remain in control</div>
+      </section>
+      <form id="login-form" class="login-card">
+        <div class="brand-mark">TG</div>
+        <h2>Sign in to TradeGuard</h2>
+        <p class="muted">Use your local development account.</p>
+        <label>Email<input id="email" type="email" value="admin@tradeguard.local" required /></label>
+        <label>Password<input id="password" type="password" value="change-me-now" required /></label>
+        <button type="submit" class="primary">Sign in</button>
+        <p id="login-error" class="error" role="alert"></p>
+      </form>
+    </div>
+
+    <div id="app-view" class="app-shell hidden">
+      <aside class="sidebar">
+        <div class="brand"><span class="brand-mark small">TG</span><span>TradeGuard</span></div>
+        <nav aria-label="Primary navigation">
+          <button class="nav-item active" data-view="dashboard">Overview</button>
+          <button class="nav-item" data-view="counterparties">Counterparties</button>
+          <button class="nav-item" data-view="transactions">Transactions</button>
+          <button class="nav-item" data-view="reviews">Review queue</button>
+          <button class="nav-item" data-view="assessment">Assessment</button>
+          <button class="nav-item" data-view="audit">Audit trail</button>
+        </nav>
+        <div class="sidebar-footer">
+          <span id="user-email"></span>
+          <button id="logout" class="text-button">Sign out</button>
+        </div>
+      </aside>
+
+      <main>
+        <header class="topbar">
+          <div><p class="eyebrow">TRADE RISK WORKSPACE</p><h1 id="page-title">Overview</h1></div>
+          <span class="demo-pill">Synthetic model demo</span>
+        </header>
+        <div id="notice" class="notice hidden" role="status"></div>
+
+        <section id="dashboard" class="view">
+          <div id="metrics" class="metric-grid"></div>
+          <div class="panel-grid">
+            <article class="panel hero-panel"><p class="eyebrow">WORKFLOW</p><h2>One evidence trail, five deliberate steps.</h2><div class="workflow"><span>Validate</span><i></i><span>Screen</span><i></i><span>Rules</span><i></i><span>Model</span><i></i><span>Decide</span></div></article>
+            <article class="panel"><p class="eyebrow">GUARDRAIL</p><h2>Compliance always wins.</h2><p class="muted">A confirmed concern is a hard stop. Model probability cannot clear or override it.</p></article>
+          </div>
+        </section>
+
+        <section id="counterparties" class="view hidden">
+          <div class="section-head"><p>Create and inspect public-safe company records.</p><button class="primary" data-dialog="counterparty-dialog">New counterparty</button></div>
+          <div class="table-wrap"><table><thead><tr><th>Legal name</th><th>Jurisdiction</th><th>Registration</th><th>Status</th></tr></thead><tbody id="counterparty-rows"></tbody></table></div>
+        </section>
+
+        <section id="transactions" class="view hidden">
+          <div class="section-head"><p>Capture commercial terms and submit a reproducible assessment.</p><button class="primary" data-dialog="transaction-dialog">New transaction</button></div>
+          <div class="table-wrap"><table><thead><tr><th>Reference</th><th>Route</th><th>Amount</th><th>Status</th><th></th></tr></thead><tbody id="transaction-rows"></tbody></table></div>
+        </section>
+
+        <section id="reviews" class="view hidden">
+          <div class="section-head"><p>Cases that require accountable human judgment.</p><button id="refresh-reviews" class="secondary">Refresh</button></div>
+          <div id="review-cards" class="card-list"></div>
+        </section>
+
+        <section id="assessment" class="view hidden">
+          <form id="assessment-lookup" class="lookup"><input id="assessment-id" placeholder="Assessment ID" required /><button class="primary">Open assessment</button></form>
+          <div id="assessment-result"></div>
+        </section>
+
+        <section id="audit" class="view hidden">
+          <div class="section-head"><p>Immutable activity records for important system actions.</p><button id="refresh-audit" class="secondary">Refresh</button></div>
+          <div class="table-wrap"><table><thead><tr><th>Time</th><th>Action</th><th>Object</th><th>Actor</th></tr></thead><tbody id="audit-rows"></tbody></table></div>
+        </section>
+      </main>
+    </div>
+
+    <dialog id="counterparty-dialog">
+      <form id="counterparty-form" method="dialog" class="dialog-form">
+        <div class="dialog-title"><h2>New counterparty</h2><button type="button" class="icon-button dialog-close" aria-label="Close">x</button></div>
+        <label>Legal name<input name="legal_name" required /></label>
+        <div class="two-col"><label>Jurisdiction<input name="jurisdiction" maxlength="2" placeholder="US" required /></label><label>Registration number<input name="registration_number" required /></label></div>
+        <label>Website<input name="website" type="url" placeholder="https://example.com" /></label>
+        <button type="submit" class="primary">Create record</button>
+      </form>
+    </dialog>
+
+    <dialog id="transaction-dialog">
+      <form id="transaction-form" method="dialog" class="dialog-form wide">
+        <div class="dialog-title"><h2>New transaction</h2><button type="button" class="icon-button dialog-close" aria-label="Close">x</button></div>
+        <div class="two-col"><label>Reference<input name="reference" required /></label><label>Counterparty ID<input name="counterparty_id" required /></label></div>
+        <label>Product description<input name="product_description" required /></label>
+        <div class="three-col"><label>Origin<input name="origin_country" maxlength="2" required /></label><label>Destination<input name="destination_country" maxlength="2" required /></label><label>Currency<input name="currency" value="USD" maxlength="3" required /></label></div>
+        <div class="three-col"><label>Amount<input name="amount" type="number" min="1" step="0.01" required /></label><label>Payment method<select name="payment_method"><option value="letter_of_credit">Letter of credit</option><option value="wire_transfer">Wire transfer</option><option value="open_account">Open account</option></select></label><label>Terms (days)<input name="payment_terms_days" type="number" min="0" value="30" /></label></div>
+        <div class="two-col"><label>Deposit %<input name="deposit_percentage" type="number" min="0" max="100" value="30" /></label><label>Requested exposure<input name="requested_credit_exposure" type="number" min="0" step="0.01" /></label></div>
+        <label>End use<textarea name="end_use" required></textarea></label>
+        <button type="submit" class="primary">Create draft</button>
+      </form>
+    </dialog>
+    <script src="/static/app.js" defer></script>
+  </body>
+</html>
