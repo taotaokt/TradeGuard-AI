@@ -1,0 +1,3 @@
+source_id,name,entity_type,country,address,program,aliases,identifiers,remarks
+DEMO-001,Example Restricted Trading Limited,entity,GB,1 Fictional Road London,DEMO PROGRAM,Example Restricted Trading|ERT Demo,"{""registration_number"":""DEMO-REG-001""}",FICTIONAL TEST DATA - NOT A REAL DESIGNATION
+DEMO-002,Fictional Orion Logistics Group,entity,SG,99 Sample Harbour Road,DEMO PROGRAM,Orion Logistics Demo,"{""registration_number"":""DEMO-REG-002""}",FICTIONAL TEST DATA - NOT A REAL DESIGNATION

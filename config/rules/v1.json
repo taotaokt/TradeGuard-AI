@@ -1,0 +1,58 @@
+{
+  "version": "v1",
+  "status": "active",
+  "description": "Initial unvalidated demonstration rules. Thresholds require business approval.",
+  "rules": [
+    {
+      "reason_code": "BENEFICIARY_MISMATCH",
+      "inputs": ["bank_beneficiary_name", "parties.name"],
+      "condition": "beneficiary_name_not_in_transaction_parties",
+      "description": "Bank beneficiary does not match a contracted party.",
+      "severity": "critical",
+      "action": "request_information",
+      "explanatory_text": "Verify that the receiving bank account belongs to a contracted transaction party."
+    },
+    {
+      "reason_code": "UNKNOWN_END_USER",
+      "inputs": ["parties.role"],
+      "condition": "end_user_party_missing",
+      "description": "A required end user has not been identified.",
+      "severity": "high",
+      "action": "request_information",
+      "explanatory_text": "Identify the final end user before the transaction proceeds."
+    },
+    {
+      "reason_code": "UNKNOWN_END_USE",
+      "inputs": ["end_use"],
+      "condition": "end_use_missing_or_vague",
+      "description": "The transaction end use is missing or insufficiently specific.",
+      "severity": "high",
+      "action": "request_information",
+      "explanatory_text": "Provide a specific commercial end use rather than a placeholder."
+    },
+    {
+      "reason_code": "NEW_COUNTERPARTY_LONG_TERMS",
+      "inputs": ["payment_terms_days"],
+      "condition": "payment_terms_above_threshold",
+      "description": "A new counterparty requests payment terms beyond approved policy.",
+      "severity": "high",
+      "action": "manual_review",
+      "parameters": {
+        "payment_terms_days": 30
+      },
+      "explanatory_text": "Review payment protection such as deposit, letter of credit, or insurance."
+    },
+    {
+      "reason_code": "EXPOSURE_LIMIT_EXCEEDED",
+      "inputs": ["requested_credit_exposure"],
+      "condition": "credit_exposure_above_threshold",
+      "description": "Requested unsecured exposure exceeds the demonstration policy threshold.",
+      "severity": "high",
+      "action": "manual_review",
+      "parameters": {
+        "maximum_credit_exposure": 100000
+      },
+      "explanatory_text": "Reduce exposure or document management approval and risk controls."
+    }
+  ]
+}

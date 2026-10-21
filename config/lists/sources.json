@@ -1,0 +1,27 @@
+{
+  "reviewed_at": "2026-10-20",
+  "note": "These are official landing pages, not automatic legal determinations. Verify restrictions against the responsible authority before acting.",
+  "sources": [
+    {
+      "code": "ofac-sls",
+      "name": "OFAC Sanctions List Service",
+      "authority": "U.S. Department of the Treasury, Office of Foreign Assets Control",
+      "url": "https://ofac.treasury.gov/sanctions-list-service",
+      "automatic_import": false
+    },
+    {
+      "code": "us-csl",
+      "name": "U.S. Consolidated Screening List",
+      "authority": "U.S. Department of Commerce, International Trade Administration",
+      "url": "https://www.trade.gov/consolidated-screening-list",
+      "automatic_import": false
+    },
+    {
+      "code": "uksl",
+      "name": "UK Sanctions List",
+      "authority": "UK Foreign, Commonwealth & Development Office",
+      "url": "https://www.gov.uk/government/publications/the-uk-sanctions-list",
+      "automatic_import": false
+    }
+  ]
+}
