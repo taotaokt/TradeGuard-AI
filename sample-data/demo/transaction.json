@@ -1,0 +1,13 @@
+{
+  "reference": "DEMO-EXPORT-001",
+  "product_description": "Commercial refrigeration components",
+  "origin_country": "GB",
+  "destination_country": "US",
+  "amount": "85000.00",
+  "currency": "USD",
+  "payment_method": "letter_of_credit",
+  "payment_terms_days": 15,
+  "deposit_percentage": "35.00",
+  "requested_credit_exposure": "55250.00",
+  "end_use": "Installation in fictional commercial cold-storage facilities"
+}

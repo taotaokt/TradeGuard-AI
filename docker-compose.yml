@@ -1,0 +1,33 @@
+services:
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql+psycopg://tradeguard:tradeguard@db:5432/tradeguard
+      SECRET_KEY: local-compose-secret-change-before-production
+      INITIAL_ADMIN_EMAIL: admin@tradeguard.local
+      INITIAL_ADMIN_PASSWORD: change-me-now
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: tradeguard
+      POSTGRES_USER: tradeguard
+      POSTGRES_PASSWORD: tradeguard
+    ports:
+      - "5432:5432"
+    volumes:
+      - tradeguard_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tradeguard -d tradeguard"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  tradeguard_pgdata:
+
