@@ -2,9 +2,9 @@
 
 **Document type:** Product and Software Requirements Specification
 
-**Version:** 1.2
+**Version:** 1.3
 
-**Status:** MVP through M9 monitoring workflows implemented; production validation remains out of scope
+**Status:** MVP through M10 operational automation implemented; production validation remains out of scope
 
 **Date:** 2026-10-21
 
@@ -619,6 +619,14 @@ POST   /api/transactions/{id}/outcome
 GET    /api/transactions/{id}/outcome
 POST   /api/monitoring/drift-snapshots
 GET    /api/monitoring/drift-snapshots
+PUT    /api/monitoring/schedules/{job_key}
+GET    /api/monitoring/schedules
+POST   /api/monitoring/schedules/run-due
+GET    /api/monitoring/schedule-executions
+GET    /api/monitoring/operations-summary
+GET    /api/notifications
+POST   /api/notifications/claim
+POST   /api/notifications/{id}/result
 
 GET    /api/admin/lists
 POST   /api/admin/lists/{id}/versions

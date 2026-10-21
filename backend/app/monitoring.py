@@ -1,4 +1,5 @@
 import json
+from datetime import datetime
 from typing import Iterable
 
 from sqlalchemy import select
@@ -7,6 +8,9 @@ from sqlalchemy.orm import Session
 from backend.app.audit import record_audit_event
 from backend.app.models import (
     Alert,
+    DriftSnapshot,
+    ModelVersion,
+    NotificationDelivery,
     Outcome,
     ScreeningCandidate,
     ScreeningRun,
@@ -14,6 +18,31 @@ from backend.app.models import (
     TransactionParty,
     User,
 )
+
+
+def enqueue_alert_notification(db: Session, *, alert: Alert) -> NotificationDelivery:
+    delivery = NotificationDelivery(
+        alert_id=alert.id,
+        idempotency_key="alert:{}:reviewer-role".format(alert.id),
+        channel="reviewer_role",
+        recipient_role=alert.required_role,
+        status="pending",
+        payload_json=json.dumps(
+            {
+                "alert_id": alert.id,
+                "alert_type": alert.alert_type,
+                "severity": alert.severity,
+                "required_role": alert.required_role,
+                "title": alert.title,
+                "description": alert.description,
+            },
+            sort_keys=True,
+        ),
+        available_at=datetime.utcnow(),
+    )
+    db.add(delivery)
+    db.flush()
+    return delivery
 
 
 def create_screening_alert(
@@ -55,6 +84,7 @@ def create_screening_alert(
     )
     db.add(alert)
     db.flush()
+    enqueue_alert_notification(db, alert=alert)
     record_audit_event(
         db,
         actor_id=actor.id,
@@ -112,6 +142,7 @@ def create_outcome_alert(
     )
     db.add(alert)
     db.flush()
+    enqueue_alert_notification(db, alert=alert)
     record_audit_event(
         db,
         actor_id=actor.id,
@@ -124,5 +155,40 @@ def create_outcome_alert(
             "transaction_id": transaction.id,
             "outcome_id": outcome.id,
         },
+    )
+    return alert
+
+
+def create_drift_alert(
+    db: Session,
+    *,
+    snapshot: DriftSnapshot,
+    model_version: ModelVersion,
+    actor: User,
+) -> Alert:
+    alert = Alert(
+        alert_type="model_drift",
+        severity="critical" if snapshot.status == "critical" else "medium",
+        required_role="model_developer",
+        title="Model monitoring threshold exceeded",
+        description=(
+            "The {} prediction window produced a {} drift status."
+        ).format(model_version.version, snapshot.status),
+        created_by_id=actor.id,
+        source_reference_json=json.dumps(
+            {"drift_snapshot_id": snapshot.id, "model_version": model_version.version},
+            sort_keys=True,
+        ),
+    )
+    db.add(alert)
+    db.flush()
+    enqueue_alert_notification(db, alert=alert)
+    record_audit_event(
+        db,
+        actor_id=actor.id,
+        action="alert.created",
+        object_type="alert",
+        object_id=alert.id,
+        details={"alert_type": "model_drift", "drift_snapshot_id": snapshot.id},
     )
     return alert

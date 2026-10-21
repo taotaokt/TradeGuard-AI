@@ -468,6 +468,94 @@ class DriftSnapshotRead(ORMModel):
     created_at: datetime
 
 
+class ScheduledJobUpsert(BaseModel):
+    enabled: bool = True
+    interval_minutes: int = Field(ge=15, le=525600)
+    next_run_at: Optional[datetime] = None
+    force: bool = False
+    fuzzy_threshold: int = Field(default=85, ge=50, le=100)
+    window_days: int = Field(default=90, ge=1, le=730)
+    minimum_sample_size: int = Field(default=20, ge=5, le=10000)
+
+
+class ScheduledJobRead(ORMModel):
+    id: str
+    job_key: str
+    enabled: bool
+    interval_minutes: int
+    parameters_json: str
+    next_run_at: datetime
+    last_started_at: Optional[datetime]
+    last_completed_at: Optional[datetime]
+    last_status: Optional[str]
+    version: int
+    updated_by_id: str
+    created_at: datetime
+    updated_at: datetime
+
+
+class ScheduledRunRequest(BaseModel):
+    limit: int = Field(default=10, ge=1, le=50)
+
+
+class ScheduledJobExecutionRead(ORMModel):
+    id: str
+    scheduled_job_id: str
+    status: str
+    triggered_by_id: str
+    result_reference_json: str
+    error_message: Optional[str]
+    started_at: datetime
+    completed_at: Optional[datetime]
+
+
+class NotificationClaimRequest(BaseModel):
+    worker_id: str = Field(min_length=2, max_length=120)
+    limit: int = Field(default=20, ge=1, le=100)
+
+
+class NotificationResultRequest(BaseModel):
+    worker_id: str = Field(min_length=2, max_length=120)
+    status: Literal["delivered", "failed"]
+    error: Optional[str] = Field(default=None, max_length=2000)
+
+    @model_validator(mode="after")
+    def validate_delivery_result(self):
+        if self.status == "failed" and not self.error:
+            raise ValueError("error is required for failed delivery")
+        return self
+
+
+class NotificationDeliveryRead(ORMModel):
+    id: str
+    alert_id: str
+    idempotency_key: str
+    channel: str
+    recipient_role: str
+    status: str
+    payload_json: str
+    attempt_count: int
+    available_at: datetime
+    claimed_by: Optional[str]
+    claimed_at: Optional[datetime]
+    delivered_at: Optional[datetime]
+    last_error: Optional[str]
+    created_at: datetime
+
+
+class OperationsSummary(BaseModel):
+    health: Literal["healthy", "attention"]
+    open_alerts: int
+    pending_notifications: int
+    processing_notifications: int
+    failed_notifications: int
+    enabled_schedules: int
+    overdue_schedules: int
+    failed_executions_24h: int
+    latest_rescreen_status: Optional[str]
+    latest_drift_status: Optional[str]
+
+
 class RuleVersionRead(ORMModel):
     id: str
     version: str

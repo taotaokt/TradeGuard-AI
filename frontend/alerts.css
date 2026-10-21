@@ -67,6 +67,47 @@
   margin-top: 0.4rem;
 }
 
+.operations-metrics {
+  margin-bottom: 1rem;
+}
+
+.operations-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+}
+
+.operations-history {
+  margin-top: 1rem;
+}
+
+.compact-list {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.compact-item {
+  align-items: center;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  justify-content: space-between;
+  padding: 0.55rem 0;
+}
+
+.compact-item:last-child {
+  border-bottom: 0;
+}
+
+.compact-item small {
+  color: var(--muted);
+  display: block;
+  margin-top: 0.25rem;
+}
+
+.embedded-table {
+  border: 0;
+}
+
 @media (max-width: 600px) {
   .alert-card {
     grid-template-columns: 1fr;
@@ -77,6 +118,10 @@
   }
 
   .monitoring-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .operations-grid {
     grid-template-columns: 1fr;
   }
 }

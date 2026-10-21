@@ -396,6 +396,56 @@ class DriftSnapshot(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
 
 
+class ScheduledJob(TimestampMixin, Base):
+    __tablename__ = "scheduled_jobs"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    job_key: Mapped[str] = mapped_column(String(60), unique=True, index=True, nullable=False)
+    enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    interval_minutes: Mapped[int] = mapped_column(Integer, nullable=False)
+    parameters_json: Mapped[str] = mapped_column(Text, default="{}", nullable=False)
+    next_run_at: Mapped[datetime] = mapped_column(DateTime, index=True, nullable=False)
+    last_started_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
+    last_completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
+    last_status: Mapped[Optional[str]] = mapped_column(String(40), index=True)
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    updated_by_id: Mapped[str] = mapped_column(ForeignKey("users.id"), nullable=False)
+
+
+class ScheduledJobExecution(Base):
+    __tablename__ = "scheduled_job_executions"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    scheduled_job_id: Mapped[str] = mapped_column(
+        ForeignKey("scheduled_jobs.id"), index=True, nullable=False
+    )
+    status: Mapped[str] = mapped_column(String(40), index=True, nullable=False)
+    triggered_by_id: Mapped[str] = mapped_column(ForeignKey("users.id"), nullable=False)
+    result_reference_json: Mapped[str] = mapped_column(Text, default="{}", nullable=False)
+    error_message: Mapped[Optional[str]] = mapped_column(Text)
+    started_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
+
+
+class NotificationDelivery(Base):
+    __tablename__ = "notification_deliveries"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    alert_id: Mapped[str] = mapped_column(ForeignKey("alerts.id"), index=True, nullable=False)
+    idempotency_key: Mapped[str] = mapped_column(String(160), unique=True, nullable=False)
+    channel: Mapped[str] = mapped_column(String(40), nullable=False)
+    recipient_role: Mapped[str] = mapped_column(String(50), index=True, nullable=False)
+    status: Mapped[str] = mapped_column(String(40), index=True, nullable=False)
+    payload_json: Mapped[str] = mapped_column(Text, nullable=False)
+    attempt_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    available_at: Mapped[datetime] = mapped_column(DateTime, index=True, nullable=False)
+    claimed_by: Mapped[Optional[str]] = mapped_column(String(120))
+    claimed_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
+    delivered_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
+    last_error: Mapped[Optional[str]] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+
+
 class SupportingDocument(TimestampMixin, Base):
     __tablename__ = "supporting_documents"
     __table_args__ = (

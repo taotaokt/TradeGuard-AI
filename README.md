@@ -30,7 +30,9 @@ The current version can:
 - assign, acknowledge, resolve, dismiss, or launch a versioned reassessment from an alert;
 - run a scheduler-ready portfolio rescreen that skips counterparties already checked against current lists;
 - record payment delays, disputes, losses, cancellations, and on-time outcomes; and
-- create model-monitoring snapshots for prediction shift, low-confidence rate, Brier score, and calibration gap.
+- create model-monitoring snapshots for prediction shift, low-confidence rate, Brier score, and calibration gap;
+- configure persistent portfolio and model-monitoring schedules with execution history; and
+- queue alert notifications in an idempotent, retryable Outbox for an external delivery worker.
 
 The included model is deliberately trained on generated data. It demonstrates a governed ML workflow, not real creditworthiness or production readiness.
 
@@ -47,6 +49,7 @@ See [REQUIREMENTS.md](./REQUIREMENTS.md) for the full product requirements and w
 - [x] M7: deployment reference, CI, public demo data, and application materials
 - [x] M8: monitoring alerts, reviewer ownership, and alert-driven reassessment
 - [x] M9: portfolio rescreening, trade outcomes, and model-drift snapshots
+- [x] M10: persistent schedules, execution history, notification Outbox, and operations dashboard
 
 ## Run it for the first time
 
@@ -189,6 +192,12 @@ The **Alert center** now includes controls for portfolio rescreening and model-d
 
 The synchronous rescreen endpoint is intentionally scheduler-ready: a trusted cron service or managed job runner can invoke it later without moving decision logic out of the application. See [docs/monitoring.md](./docs/monitoring.md) for metrics, thresholds, limitations, and operational guidance.
 
+## Configure operational automation
+
+Administrators can use the **Operations** workspace or the API to configure daily portfolio rescreening and weekly model-drift checks. `POST /api/monitoring/schedules/run-due` atomically advances each due schedule before executing it and records a completed or failed execution. A production scheduler can call this endpoint with a dedicated service account.
+
+Every newly created alert also writes an idempotent notification record in the same database transaction. A delivery adapter claims work from `POST /api/notifications/claim`, sends it through an approved email or messaging provider, and reports success or failure to `POST /api/notifications/{id}/result`. Failed deliveries use bounded exponential backoff, and abandoned claims become eligible again after 15 minutes. No real external message is sent by this repository.
+
 ## Run the tests
 
 ```bash
@@ -201,7 +210,7 @@ To include coverage:
 python3 -m pytest --cov=backend.app --cov-report=term-missing
 ```
 
-The test suite covers critical API workflows, hard-stop precedence, monitoring-alert lifecycle, alert-driven reassessment, model reproducibility, artifact verification, PDF generation, audit access, and migrations.
+The test suite covers critical API workflows, hard-stop precedence, monitoring-alert lifecycle, alert-driven reassessment, scheduled execution, notification retry behavior, model reproducibility, artifact verification, PDF generation, audit access, and migrations.
 
 ## PostgreSQL and Docker
 

@@ -53,3 +53,14 @@ Transaction outcomes are stored separately from predictions so estimated risk an
 cannot be confused. Adverse outcomes create risk-review alerts. Immutable drift snapshots aggregate a
 bounded prediction window, compare its mean with the training reference rate, track low-confidence and
 risk-band distributions, and calculate Brier score and calibration gap when outcomes are available.
+
+M10 keeps scheduling inside the modular monolith while separating execution from the clock that triggers
+it. Persistent job definitions store cadence, parameters, next-run time, and last status. A trusted worker
+calls the due-job endpoint; the application advances each schedule before executing it and retains a
+separate success or failure record. This prevents overlapping callers from repeatedly selecting the same
+due schedule under normal operation and makes failures visible in the operations summary.
+
+Alert creation and notification delivery use a transactional Outbox boundary. The alert and its
+idempotency-keyed delivery record are committed together. External adapters claim bounded batches and
+report delivery outcomes; failed attempts use exponential backoff, while stale claims can be recovered.
+Provider credentials and provider-specific code remain outside the core risk application.

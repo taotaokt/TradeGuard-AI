@@ -36,6 +36,7 @@
           <button class="nav-item" data-view="transactions">Transactions</button>
           <button class="nav-item" data-view="reviews">Review queue</button>
           <button class="nav-item" data-view="alerts">Alert center</button>
+          <button id="operations-nav" class="nav-item" data-view="operations">Operations</button>
           <button class="nav-item" data-view="assessment">Assessment</button>
           <button class="nav-item" data-view="audit">Audit trail</button>
         </nav>
@@ -79,6 +80,16 @@
           <div class="section-head"><p>New screening signals, trade outcomes, and model changes that require a recorded response.</p><div class="row-actions"><button id="run-monitoring" class="primary">Run rescreening</button><button id="run-drift" class="secondary">Check model drift</button><button id="refresh-alerts" class="secondary">Refresh</button></div></div>
           <div id="monitoring-summary" class="monitoring-grid"></div>
           <div id="alert-cards" class="card-list"></div>
+        </section>
+
+        <section id="operations" class="view hidden">
+          <div class="section-head"><p>Scheduler status, execution history, and delivery queue health.</p><div class="row-actions"><button id="configure-schedules" class="primary">Configure defaults</button><button id="run-due-jobs" class="secondary">Run due jobs</button><button id="refresh-operations" class="secondary">Refresh</button></div></div>
+          <div id="operations-metrics" class="metric-grid operations-metrics"></div>
+          <div class="operations-grid">
+            <article class="panel"><p class="eyebrow">SCHEDULES</p><div id="schedule-cards" class="compact-list"></div></article>
+            <article class="panel"><p class="eyebrow">NOTIFICATION OUTBOX</p><div class="table-wrap embedded-table"><table><thead><tr><th>Status</th><th>Role</th><th>Attempts</th><th>Created</th></tr></thead><tbody id="notification-rows"></tbody></table></div></article>
+          </div>
+          <article class="panel operations-history"><p class="eyebrow">RECENT EXECUTIONS</p><div class="table-wrap embedded-table"><table><thead><tr><th>Started</th><th>Status</th><th>Result</th><th>Error</th></tr></thead><tbody id="execution-rows"></tbody></table></div></article>
         </section>
 
         <section id="assessment" class="view hidden">
