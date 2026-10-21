@@ -37,3 +37,9 @@ FastAPI serves a no-build browser workspace and streams generated PDF assessment
 and audit endpoints remain thin read models over the same transactional database. The deployment
 reference runs the modular monolith and PostgreSQL as separate containers; background processing,
 object storage, scheduled monitoring, and external KYB data remain explicit future boundaries.
+
+Screening runs that produce candidate matches also create versioned monitoring alerts. Alerts retain
+their source screening run, candidate references, affected transactions, reviewer ownership, and full
+acknowledgement or resolution history. A reviewer can launch a new immutable assessment from an alert;
+the alert stores the resulting assessment ID while audit events preserve the reason and actor. Scheduled
+execution and outbound notifications remain later operational boundaries.

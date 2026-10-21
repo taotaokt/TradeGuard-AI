@@ -42,6 +42,7 @@ class DashboardSummary(BaseModel):
     transactions: int
     pending_reviews: int
     compliance_holds: int
+    open_alerts: int
 
 
 class AliasCreate(BaseModel):
@@ -347,6 +348,41 @@ class ReviewDecision(BaseModel):
     ]
     rationale: str = Field(min_length=10, max_length=4000)
     conditions: List[str] = Field(default_factory=list, max_length=20)
+
+
+class AlertRead(ORMModel):
+    id: str
+    alert_type: str
+    severity: str
+    required_role: str
+    title: str
+    description: str
+    status: str
+    counterparty_id: Optional[str]
+    transaction_id: Optional[str]
+    screening_run_id: Optional[str]
+    reassessment_id: Optional[str]
+    source_reference_json: str
+    assigned_to_id: Optional[str]
+    created_by_id: Optional[str]
+    acknowledged_by_id: Optional[str]
+    acknowledged_at: Optional[datetime]
+    resolved_by_id: Optional[str]
+    resolved_at: Optional[datetime]
+    resolution_rationale: Optional[str]
+    created_at: datetime
+    updated_at: datetime
+
+
+class AlertAction(BaseModel):
+    action: Literal["acknowledge", "assign", "resolve", "dismiss"]
+    rationale: str = Field(min_length=5, max_length=4000)
+    assignee_id: Optional[str] = None
+
+
+class AlertReassessmentRequest(BaseModel):
+    transaction_id: Optional[str] = None
+    rationale: str = Field(min_length=5, max_length=4000)
 
 
 class RuleVersionRead(ORMModel):

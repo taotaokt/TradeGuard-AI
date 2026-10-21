@@ -1,10 +1,14 @@
 # TradeGuard AI — Product Requirements Document
 
-**Document type:** Product and Software Requirements Specification  
-**Version:** 1.0  
-**Status:** MVP implemented; production validation remains out of scope  
-**Date:** 2026-10-21  
-**Primary audience:** Product owner, developer, data scientist, reviewer, admissions or hiring evaluator  
+**Document type:** Product and Software Requirements Specification
+
+**Version:** 1.1
+
+**Status:** MVP and M8 monitoring-alert workflow implemented; production validation remains out of scope
+
+**Date:** 2026-10-21
+
+**Primary audience:** Product owner, developer, data scientist, reviewer, admissions or hiring evaluator
 
 ---
 
@@ -607,7 +611,8 @@ GET    /api/assessments/{id}/report
 
 GET    /api/reviews
 GET    /api/alerts
-POST   /api/alerts/{id}/resolve
+POST   /api/alerts/{id}/actions
+POST   /api/alerts/{id}/reassess
 
 GET    /api/admin/lists
 POST   /api/admin/lists/{id}/versions

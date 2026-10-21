@@ -22,10 +22,12 @@ The current version can:
 - run validation, screening, rules, and decision steps in a fixed order;
 - calculate a calibrated synthetic commercial-risk probability with uncertainty checks;
 - verify the model artifact checksum and store the model/data/runtime versions used;
-- return reason codes, risk dimensions, recommendations, and review tasks; and
+- return reason codes, risk dimensions, recommendations, and review tasks;
 - let reviewers approve, approve with conditions, request information, reject, or maintain a compliance hold;
-- provide a responsive browser workspace, dashboard, review queue, and audit trail; and
-- export a two-page PDF assessment report with evidence and limitations.
+- provide a responsive browser workspace, dashboard, review queue, and audit trail;
+- export a two-page PDF assessment report with evidence and limitations;
+- create monitoring alerts when a new screening run finds candidate matches; and
+- assign, acknowledge, resolve, dismiss, or launch a versioned reassessment from an alert.
 
 The included model is deliberately trained on generated data. It demonstrates a governed ML workflow, not real creditworthiness or production readiness.
 
@@ -40,6 +42,7 @@ See [REQUIREMENTS.md](./REQUIREMENTS.md) for the full product requirements and w
 - [x] M5: credit-risk models, calibration, inference safeguards, and model documentation
 - [x] M6: frontend, PDF reports, dashboard, and complete audit interface
 - [x] M7: deployment reference, CI, public demo data, and application materials
+- [x] M8: monitoring alerts, reviewer ownership, and alert-driven reassessment
 
 ## Run it for the first time
 
@@ -162,6 +165,16 @@ python3 -m pytest backend/tests/test_ml.py
 
 The pipeline uses a fixed seed, a stratified train/test split, sigmoid calibration, and held-out metrics. It compares logistic regression with a random forest, records dependency and data checksums, and chooses the lowest Brier score with ROC AUC as a tie-breaker. The current synthetic result is documented in [docs/research-report.md](./docs/research-report.md).
 
+## Work with monitoring alerts
+
+Each screening run that produces one or more candidate matches now creates a monitoring alert. Open **Alert center** in the browser workspace, or use the API:
+
+1. Call `GET /api/alerts` to view alerts and their linked counterparty, screening run, and affected transactions.
+2. Call `POST /api/alerts/{id}/actions` to assign, acknowledge, resolve, or dismiss an alert with a rationale.
+3. Call `POST /api/alerts/{id}/reassess` with a linked transaction ID to create a new immutable assessment version.
+
+The alert closes only after a reviewer records a terminal action or launches the reassessment. Both the alert action and the new assessment are retained in the audit trail.
+
 ## Run the tests
 
 ```bash
@@ -174,7 +187,7 @@ To include coverage:
 python3 -m pytest --cov=backend.app --cov-report=term-missing
 ```
 
-The current test suite contains 21 test functions with approximately 92% backend statement coverage. It covers critical API workflows, hard-stop precedence, model reproducibility, artifact verification, PDF generation, audit access, and migrations.
+The test suite covers critical API workflows, hard-stop precedence, monitoring-alert lifecycle, alert-driven reassessment, model reproducibility, artifact verification, PDF generation, audit access, and migrations.
 
 ## PostgreSQL and Docker
 

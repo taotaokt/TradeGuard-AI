@@ -8,7 +8,16 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import select
 
-from backend.app.api import assessments, auth, counterparties, documents, screening, system, transactions
+from backend.app.api import (
+    assessments,
+    auth,
+    counterparties,
+    documents,
+    monitoring,
+    screening,
+    system,
+    transactions,
+)
 from backend.app.config import settings
 from backend.app.db import SessionLocal
 from backend.app.models import User
@@ -57,6 +66,7 @@ app.include_router(transactions.router, prefix="/api")
 app.include_router(documents.router, prefix="/api")
 app.include_router(screening.router, prefix="/api")
 app.include_router(assessments.router, prefix="/api")
+app.include_router(monitoring.router, prefix="/api")
 app.include_router(system.router, prefix="/api")
 
 FRONTEND_DIR = Path(__file__).resolve().parents[2] / "frontend"

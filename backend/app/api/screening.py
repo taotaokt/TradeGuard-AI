@@ -27,6 +27,7 @@ from backend.app.models import (
     ScreeningRun,
     User,
 )
+from backend.app.monitoring import create_screening_alert
 from backend.app.schemas import (
     ScreeningCandidateRead,
     ScreeningListCreate,
@@ -391,6 +392,9 @@ def screen_counterparty(
                     )
                 )
 
+    db.flush()
+    if run.candidates:
+        create_screening_alert(db, run=run, candidates=run.candidates, actor=user)
     counterparty.status = "screening_review" if run.candidates else "active"
     counterparty.version += 1
     record_audit_event(

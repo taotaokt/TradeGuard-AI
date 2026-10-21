@@ -6,6 +6,11 @@ def test_health(client):
     frontend = client.get("/")
     assert frontend.status_code == 200
     assert "TradeGuard AI" in frontend.text
+    assert "Alert center" in frontend.text
+
+    alert_styles = client.get("/static/alerts.css")
+    assert alert_styles.status_code == 200
+    assert ".alert-card" in alert_styles.text
 
 
 def test_authentication_required(client):

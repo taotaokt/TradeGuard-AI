@@ -6,6 +6,7 @@
     <meta name="description" content="TradeGuard AI cross-border transaction risk workspace" />
     <title>TradeGuard AI</title>
     <link rel="stylesheet" href="/static/styles.css" />
+    <link rel="stylesheet" href="/static/alerts.css" />
   </head>
   <body>
     <div id="login-view" class="login-shell">
@@ -34,6 +35,7 @@
           <button class="nav-item" data-view="counterparties">Counterparties</button>
           <button class="nav-item" data-view="transactions">Transactions</button>
           <button class="nav-item" data-view="reviews">Review queue</button>
+          <button class="nav-item" data-view="alerts">Alert center</button>
           <button class="nav-item" data-view="assessment">Assessment</button>
           <button class="nav-item" data-view="audit">Audit trail</button>
         </nav>
@@ -71,6 +73,11 @@
         <section id="reviews" class="view hidden">
           <div class="section-head"><p>Cases that require accountable human judgment.</p><button id="refresh-reviews" class="secondary">Refresh</button></div>
           <div id="review-cards" class="card-list"></div>
+        </section>
+
+        <section id="alerts" class="view hidden">
+          <div class="section-head"><p>New screening signals and monitored changes that require a recorded response.</p><button id="refresh-alerts" class="secondary">Refresh</button></div>
+          <div id="alert-cards" class="card-list"></div>
         </section>
 
         <section id="assessment" class="view hidden">

@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from backend.app.db import get_db
 from backend.app.deps import require_roles
-from backend.app.models import Assessment, AuditEvent, Counterparty, ReviewCase, TradeTransaction, User
+from backend.app.models import Alert, Assessment, AuditEvent, Counterparty, ReviewCase, TradeTransaction, User
 from backend.app.schemas import AuditEventRead, DashboardSummary
 
 
@@ -26,6 +26,9 @@ def dashboard_summary(
         ) or 0,
         compliance_holds=db.scalar(
             select(func.count(Assessment.id)).where(Assessment.status == "compliance_hold")
+        ) or 0,
+        open_alerts=db.scalar(
+            select(func.count(Alert.id)).where(Alert.status.in_(["open", "acknowledged"]))
         ) or 0,
     )
 

@@ -311,6 +311,38 @@ class ReviewCase(TimestampMixin, Base):
     assessment: Mapped[Assessment] = relationship(back_populates="review_case")
 
 
+class Alert(TimestampMixin, Base):
+    __tablename__ = "alerts"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    alert_type: Mapped[str] = mapped_column(String(60), index=True, nullable=False)
+    severity: Mapped[str] = mapped_column(String(30), index=True, nullable=False)
+    required_role: Mapped[str] = mapped_column(String(50), nullable=False)
+    title: Mapped[str] = mapped_column(String(240), nullable=False)
+    description: Mapped[str] = mapped_column(Text, nullable=False)
+    status: Mapped[str] = mapped_column(String(40), default="open", index=True, nullable=False)
+    counterparty_id: Mapped[Optional[str]] = mapped_column(
+        ForeignKey("counterparties.id"), index=True
+    )
+    transaction_id: Mapped[Optional[str]] = mapped_column(
+        ForeignKey("trade_transactions.id"), index=True
+    )
+    screening_run_id: Mapped[Optional[str]] = mapped_column(
+        ForeignKey("screening_runs.id"), index=True
+    )
+    reassessment_id: Mapped[Optional[str]] = mapped_column(
+        ForeignKey("assessments.id"), index=True
+    )
+    source_reference_json: Mapped[str] = mapped_column(Text, default="{}", nullable=False)
+    assigned_to_id: Mapped[Optional[str]] = mapped_column(ForeignKey("users.id"), index=True)
+    created_by_id: Mapped[Optional[str]] = mapped_column(ForeignKey("users.id"))
+    acknowledged_by_id: Mapped[Optional[str]] = mapped_column(ForeignKey("users.id"))
+    acknowledged_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
+    resolved_by_id: Mapped[Optional[str]] = mapped_column(ForeignKey("users.id"))
+    resolved_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
+    resolution_rationale: Mapped[Optional[str]] = mapped_column(Text)
+
+
 class SupportingDocument(TimestampMixin, Base):
     __tablename__ = "supporting_documents"
     __table_args__ = (
