@@ -52,6 +52,12 @@ class Counterparty(TimestampMixin, Base):
     jurisdiction: Mapped[str] = mapped_column(String(2), index=True, nullable=False)
     registration_number: Mapped[str] = mapped_column(String(120), index=True, nullable=False)
     status: Mapped[str] = mapped_column(String(40), default="draft", nullable=False)
+    duplicate_status: Mapped[str] = mapped_column(
+        String(40), default="clear", index=True, nullable=False
+    )
+    canonical_counterparty_id: Mapped[Optional[str]] = mapped_column(
+        ForeignKey("counterparties.id"), index=True
+    )
     website: Mapped[Optional[str]] = mapped_column(String(500))
     primary_address: Mapped[Optional[str]] = mapped_column(Text)
     notes: Mapped[Optional[str]] = mapped_column(Text)
@@ -89,6 +95,27 @@ class RelatedParty(TimestampMixin, Base):
     identifier: Mapped[Optional[str]] = mapped_column(String(150))
 
     counterparty: Mapped[Counterparty] = relationship(back_populates="related_parties")
+
+
+class CounterpartyDuplicateCandidate(TimestampMixin, Base):
+    __tablename__ = "counterparty_duplicate_candidates"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    pair_key: Mapped[str] = mapped_column(String(80), unique=True, index=True, nullable=False)
+    existing_counterparty_id: Mapped[str] = mapped_column(
+        ForeignKey("counterparties.id"), index=True, nullable=False
+    )
+    possible_duplicate_id: Mapped[str] = mapped_column(
+        ForeignKey("counterparties.id"), index=True, nullable=False
+    )
+    name_similarity: Mapped[Decimal] = mapped_column(Numeric(5, 2), nullable=False)
+    matched_name: Mapped[str] = mapped_column(String(300), nullable=False)
+    signals_json: Mapped[str] = mapped_column(Text, nullable=False)
+    status: Mapped[str] = mapped_column(String(40), default="pending", index=True, nullable=False)
+    rationale: Mapped[Optional[str]] = mapped_column(Text)
+    reviewed_by_id: Mapped[Optional[str]] = mapped_column(ForeignKey("users.id"))
+    reviewed_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
 
 
 class TradeTransaction(TimestampMixin, Base):

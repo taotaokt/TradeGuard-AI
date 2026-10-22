@@ -35,10 +35,12 @@ The current version can:
 - queue alert notifications in an idempotent, retryable Outbox for an external delivery worker;
 - aggregate open exposure without mixing currencies;
 - run reproducible downside scenarios without changing live decisions;
-- scan for missing evidence, stale screening, stale lists, and overdue outcomes; and
+- scan for missing evidence, stale screening, stale lists, and overdue outcomes;
 - track remediation items without duplicating them across repeated scans;
-- convert approval conditions into owned, due-dated workflow records; and
-- require transaction evidence before a condition can be marked fulfilled.
+- convert approval conditions into owned, due-dated workflow records;
+- require transaction evidence before a condition can be marked fulfilled;
+- detect potential duplicate counterparties from names, aliases, registration context, and domains; and
+- route unresolved entity-identity concerns to human risk review without automatically merging records.
 
 The included model is deliberately trained on generated data. It demonstrates a governed ML workflow, not real creditworthiness or production readiness.
 
@@ -59,6 +61,7 @@ See [REQUIREMENTS.md](./REQUIREMENTS.md) for the full product requirements and w
 - [x] M11: portfolio exposure analytics and reproducible stress testing
 - [x] M12: data-quality scanning and auditable remediation workflow
 - [x] M13: approval-condition ownership, evidence, and lifecycle tracking
+- [x] M14: explainable counterparty duplicate detection and entity review
 
 ## Run it for the first time
 
@@ -224,6 +227,12 @@ Each condition receives a stable issue key. Repeated scans update the same remed
 When a reviewer selects `APPROVE_WITH_CONDITIONS`, each written condition becomes a structured workflow record with an owner role, due date, status, and version. Open **Conditions** to review obligations and their deadlines.
 
 A condition can only be fulfilled with an active supporting document belonging to the assessed transaction. Authorized reviewers may waive or reopen a condition with a rationale. Overdue open conditions appear automatically in the next data-quality scan, and the PDF report shows current condition status and evidence references. See [docs/approval-conditions.md](./docs/approval-conditions.md).
+
+## Review possible duplicate companies
+
+When a counterparty is created, TradeGuard compares its normalized legal name and aliases with existing active records. Jurisdiction, registration-number, and website-domain agreement are retained as explainable signals. Similarity alone creates a review candidate; it never merges or deletes a company automatically.
+
+Open **Duplicate review** to classify a candidate as a separate company or a confirmed duplicate. Unresolved and confirmed concerns appear in data-quality review and route new linked assessments to a risk reviewer. A confirmed duplicate retains a canonical counterparty reference so historical screens, trades, and decisions are not silently rewritten. See [docs/entity-resolution.md](./docs/entity-resolution.md).
 
 ## Run the tests
 

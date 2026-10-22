@@ -2,9 +2,9 @@
 
 **Document type:** Product and Software Requirements Specification
 
-**Version:** 1.6
+**Version:** 1.7
 
-**Status:** MVP through M13 approval-condition tracking implemented; production validation remains out of scope
+**Status:** MVP through M14 counterparty entity resolution implemented; production validation remains out of scope
 
 **Date:** 2026-10-21
 
@@ -541,6 +541,7 @@ The UI shall not use green styling for a result that still contains an unresolve
 |---|---|
 | `User` | Authenticated actor and assigned roles |
 | `Counterparty` | Legal or business entity under assessment |
+| `CounterpartyDuplicateCandidate` | Explainable possible-duplicate pair and human resolution |
 | `CounterpartyAlias` | Alternative, previous, translated, or trading names |
 | `RelatedParty` | Director, owner, beneficial owner, bank beneficiary, consignee, or end user |
 | `Evidence` | Source record, document, URL, snapshot metadata, and verification state |
@@ -637,6 +638,8 @@ GET    /api/data-quality/issues
 POST   /api/data-quality/issues/{id}/actions
 GET    /api/conditions
 POST   /api/conditions/{id}/actions
+GET    /api/counterparty-duplicates
+POST   /api/counterparty-duplicates/{id}/resolve
 
 GET    /api/admin/lists
 POST   /api/admin/lists/{id}/versions
@@ -963,6 +966,7 @@ CreditEva/
 | M8–M11 — Monitoring and analytics | Alert workflow, outcomes, drift, scheduler, Outbox, portfolio stress tests | Repeatable operational and analytical workflows pass automated tests |
 | M12 — Data quality | Repeatable controls and role-owned remediation queue | Findings deduplicate, conditions auto-resolve, and human actions are audited |
 | M13 — Approval conditions | Due-dated obligations, ownership, evidence, and lifecycle | Conditions require evidence to fulfill, use optimistic locking, and surface when overdue |
+| M14 — Entity resolution | Explainable duplicate candidates and canonical references | Similar records route to review; human resolution is versioned and audited |
 
 ---
 

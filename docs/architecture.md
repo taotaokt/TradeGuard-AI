@@ -83,3 +83,10 @@ decision and assessment, has an owner role, due date, lifecycle status, and opti
 Fulfillment requires an active document attached to the assessed transaction; waivers and reopenings
 require a rationale and create audit events. Overdue open conditions are consumed by the M12 scanner,
 so operational obligations and data-quality remediation share one explainable control loop.
+
+M14 adds entity resolution without destructive record merging. New counterparties are compared with
+active records using normalized legal names and aliases. Name similarity, jurisdiction, registration
+number, and website-domain agreement are persisted as review signals. A human risk reviewer classifies
+each candidate; confirmed duplicates retain a canonical counterparty reference while both historical
+records remain available. Pending or confirmed identity concerns route linked assessments to review and
+surface in the versioned data-quality ruleset.

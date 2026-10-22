@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session, selectinload
 from backend.app.audit import record_audit_event
 from backend.app.db import get_db
 from backend.app.deps import get_current_user, require_roles
+from backend.app.duplicate_service import detect_counterparty_duplicates
 from backend.app.models import Counterparty, CounterpartyAlias, RelatedParty, User
 from backend.app.schemas import CounterpartyCreate, CounterpartyRead, CounterpartyUpdate
 
@@ -55,13 +56,19 @@ def create_counterparty(
             status_code=status.HTTP_409_CONFLICT,
             detail="A counterparty with this jurisdiction and registration number already exists",
         )
+    duplicate_candidates = detect_counterparty_duplicates(
+        db, counterparty=counterparty, user=user
+    )
     record_audit_event(
         db,
         actor_id=user.id,
         action="counterparty.created",
         object_type="counterparty",
         object_id=counterparty.id,
-        details={"legal_name": counterparty.legal_name},
+        details={
+            "legal_name": counterparty.legal_name,
+            "duplicate_candidate_count": len(duplicate_candidates),
+        },
     )
     db.commit()
     return db.scalar(_query_with_children().where(Counterparty.id == counterparty.id))

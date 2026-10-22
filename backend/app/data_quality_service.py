@@ -23,7 +23,7 @@ from backend.app.models import (
 from backend.app.schemas import DataQualityScanRequest
 
 
-RULESET_VERSION = "dq-v2"
+RULESET_VERSION = "dq-v3"
 
 
 @dataclass(frozen=True)
@@ -74,6 +74,22 @@ def _findings(db: Session, payload: DataQualityScanRequest, now: datetime) -> Li
                     "business_user",
                     "Counterparty has no active evidence",
                     details,
+                )
+            )
+        if counterparty.duplicate_status != "clear":
+            findings.append(
+                Finding(
+                    "counterparty",
+                    counterparty.id,
+                    "DQ_COUNTERPARTY_DUPLICATE_REVIEW",
+                    "high",
+                    "risk_reviewer",
+                    "Counterparty has an unresolved duplicate-entity concern",
+                    {
+                        **details,
+                        "duplicate_status": counterparty.duplicate_status,
+                        "canonical_counterparty_id": counterparty.canonical_counterparty_id,
+                    },
                 )
             )
         latest = latest_screening.get(counterparty.id)

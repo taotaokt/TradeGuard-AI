@@ -214,12 +214,20 @@ def _screening_state(db: Session, transaction: TradeTransaction) -> dict:
     statuses = {
         item.id: item.status for item in counterparties if item is not None
     }
+    duplicate_statuses = {
+        item.id: item.duplicate_status for item in counterparties if item is not None
+    }
     return {
         "counterparty_ids": counterparty_ids,
         "counterparty_statuses": statuses,
+        "counterparty_duplicate_statuses": duplicate_statuses,
         "active_list_versions": active_versions,
         "has_confirmed_hold": any(value == "compliance_hold" for value in statuses.values()),
         "has_possible_match": any(value == "screening_review" for value in statuses.values()),
+        "has_duplicate_concern": any(
+            value in {"review_required", "confirmed_duplicate"}
+            for value in duplicate_statuses.values()
+        ),
         "has_unscreened_party": (
             not counterparty_ids
             or len(statuses) != len(counterparty_ids)
@@ -245,6 +253,12 @@ def _recommend(screening: dict, rules: List[dict], prediction: dict = None) -> T
         )
     if any(item["action"] == "request_information" for item in rules):
         return "REQUEST_INFORMATION", False, "Required transaction information is missing or inconsistent."
+    if screening["has_duplicate_concern"]:
+        return (
+            "REFER",
+            False,
+            "A linked counterparty may duplicate another entity record and requires risk review.",
+        )
     if (
         screening["has_possible_match"]
         or screening["has_unscreened_party"]
@@ -390,11 +404,18 @@ def orchestrate_assessment(
         summary=summary,
         reason_codes_json=_json(
             [item["reason_code"] for item in evaluations]
+            + (["COUNTERPARTY_DUPLICATE_REVIEW"] if screening["has_duplicate_concern"] else [])
             + (prediction["reason_codes"] if prediction else ["MODEL_UNAVAILABLE"])
         ),
         risk_dimensions_json=_json(
             {
-                "identity_kyb": "insufficient" if screening["has_unscreened_party"] else "reviewed",
+                "identity_kyb": (
+                    "duplicate_review"
+                    if screening["has_duplicate_concern"]
+                    else "insufficient"
+                    if screening["has_unscreened_party"]
+                    else "reviewed"
+                ),
                 "compliance": compliance_dimension,
                 "transaction": transaction_severity,
                 "commercial_credit": prediction["risk_band"] if prediction else "unavailable",

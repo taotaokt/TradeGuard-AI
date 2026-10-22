@@ -34,6 +34,7 @@
           <button class="nav-item active" data-view="dashboard">Overview</button>
           <button class="nav-item" data-view="portfolio">Portfolio</button>
           <button class="nav-item" data-view="counterparties">Counterparties</button>
+          <button id="duplicate-nav" class="nav-item" data-view="duplicates">Duplicate review</button>
           <button class="nav-item" data-view="transactions">Transactions</button>
           <button class="nav-item" data-view="reviews">Review queue</button>
           <button class="nav-item" data-view="alerts">Alert center</button>
@@ -87,7 +88,13 @@
 
         <section id="counterparties" class="view hidden">
           <div class="section-head"><p>Create and inspect public-safe company records.</p><button class="primary" data-dialog="counterparty-dialog">New counterparty</button></div>
-          <div class="table-wrap"><table><thead><tr><th>Legal name</th><th>Jurisdiction</th><th>Registration</th><th>Status</th></tr></thead><tbody id="counterparty-rows"></tbody></table></div>
+          <div class="table-wrap"><table><thead><tr><th>Legal name</th><th>Jurisdiction</th><th>Registration</th><th>Status</th><th>Duplicate check</th></tr></thead><tbody id="counterparty-rows"></tbody></table></div>
+        </section>
+
+        <section id="duplicates" class="view hidden">
+          <div class="section-head"><p>Resolve explainable entity-match warnings before relying on fragmented company history.</p><button id="refresh-duplicates" class="secondary">Refresh</button></div>
+          <div id="duplicate-metrics" class="metric-grid operations-metrics"></div>
+          <article class="panel operations-history"><p class="eyebrow">PENDING ENTITY MATCHES</p><div id="duplicate-cards" class="card-list"></div></article>
         </section>
 
         <section id="transactions" class="view hidden">

@@ -108,6 +108,8 @@ class CounterpartyRead(ORMModel):
     jurisdiction: str
     registration_number: str
     status: str
+    duplicate_status: str
+    canonical_counterparty_id: Optional[str]
     website: Optional[str]
     primary_address: Optional[str]
     notes: Optional[str]
@@ -116,6 +118,29 @@ class CounterpartyRead(ORMModel):
     related_parties: List[RelatedPartyRead]
     created_at: datetime
     updated_at: datetime
+
+
+class CounterpartyDuplicateCandidateRead(ORMModel):
+    id: str
+    pair_key: str
+    existing_counterparty_id: str
+    possible_duplicate_id: str
+    name_similarity: Decimal
+    matched_name: str
+    signals_json: str
+    status: str
+    rationale: Optional[str]
+    reviewed_by_id: Optional[str]
+    reviewed_at: Optional[datetime]
+    version: int
+    created_at: datetime
+    updated_at: datetime
+
+
+class CounterpartyDuplicateResolution(BaseModel):
+    classification: Literal["not_duplicate", "confirmed_duplicate"]
+    rationale: str = Field(min_length=10, max_length=4000)
+    expected_version: int = Field(ge=1)
 
 
 class TransactionPartyCreate(BaseModel):
