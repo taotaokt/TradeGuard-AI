@@ -2,9 +2,9 @@
 
 **Document type:** Product and Software Requirements Specification
 
-**Version:** 1.3
+**Version:** 1.4
 
-**Status:** MVP through M10 operational automation implemented; production validation remains out of scope
+**Status:** MVP through M11 portfolio analytics implemented; production validation remains out of scope
 
 **Date:** 2026-10-21
 
@@ -627,6 +627,10 @@ GET    /api/monitoring/operations-summary
 GET    /api/notifications
 POST   /api/notifications/claim
 POST   /api/notifications/{id}/result
+GET    /api/portfolio/summary
+POST   /api/portfolio/stress-tests
+GET    /api/portfolio/stress-tests
+GET    /api/portfolio/stress-tests/{id}
 
 GET    /api/admin/lists
 POST   /api/admin/lists/{id}/versions

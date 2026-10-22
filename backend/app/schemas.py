@@ -556,6 +556,82 @@ class OperationsSummary(BaseModel):
     latest_drift_status: Optional[str]
 
 
+class PortfolioExposureBucket(BaseModel):
+    key: str
+    currency: str
+    transaction_count: int
+    exposure: Decimal
+
+
+class PortfolioOutcomeSummary(BaseModel):
+    outcome_count: int
+    adverse_outcome_count: int
+    adverse_outcome_rate: Optional[float]
+    losses_by_currency: List[PortfolioExposureBucket]
+
+
+class PortfolioSummary(BaseModel):
+    generated_at: datetime
+    transaction_count: int
+    open_transaction_count: int
+    assessed_transaction_count: int
+    unscored_transaction_count: int
+    exposure_by_currency: List[PortfolioExposureBucket]
+    exposure_by_risk_band: List[PortfolioExposureBucket]
+    exposure_by_destination: List[PortfolioExposureBucket]
+    outcomes: PortfolioOutcomeSummary
+
+
+class PortfolioStressTestCreate(BaseModel):
+    name: str = Field(min_length=3, max_length=160)
+    rationale: str = Field(min_length=10, max_length=4000)
+    probability_multiplier: Decimal = Field(default=Decimal("1.50"), ge=1, le=5)
+    exposure_growth_percentage: Decimal = Field(default=Decimal("0.00"), ge=0, le=100)
+    loss_given_default: Decimal = Field(default=Decimal("0.60"), ge=0, le=1)
+    unscored_probability: Decimal = Field(default=Decimal("0.15"), ge=0, le=1)
+    selected_countries: List[str] = Field(default_factory=list, max_length=50)
+    country_probability_addon: Decimal = Field(default=Decimal("0.00"), ge=0, le=0.5)
+
+    @field_validator("name", "rationale")
+    @classmethod
+    def strip_stress_text(cls, value: str, info) -> str:
+        stripped = value.strip()
+        minimum = 3 if info.field_name == "name" else 10
+        if len(stripped) < minimum:
+            raise ValueError("{} must contain meaningful text".format(info.field_name))
+        return stripped
+
+    @field_validator("selected_countries")
+    @classmethod
+    def normalize_stress_countries(cls, values: List[str]) -> List[str]:
+        normalized = [value.strip().upper() for value in values]
+        if any(len(value) != 2 for value in normalized):
+            raise ValueError("selected_countries must use two-letter country codes")
+        if len(set(normalized)) != len(normalized):
+            raise ValueError("selected_countries cannot contain duplicates")
+        return normalized
+
+    @model_validator(mode="after")
+    def validate_country_stress(self):
+        if self.country_probability_addon and not self.selected_countries:
+            raise ValueError(
+                "selected_countries is required when country_probability_addon is positive"
+            )
+        return self
+
+
+class PortfolioStressTestRead(ORMModel):
+    id: str
+    name: str
+    status: str
+    rationale: str
+    parameters_json: str
+    portfolio_snapshot_json: str
+    result_json: str
+    created_by_id: str
+    created_at: datetime
+
+
 class RuleVersionRead(ORMModel):
     id: str
     version: str

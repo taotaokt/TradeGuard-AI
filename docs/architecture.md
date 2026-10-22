@@ -64,3 +64,9 @@ Alert creation and notification delivery use a transactional Outbox boundary. Th
 idempotency-keyed delivery record are committed together. External adapters claim bounded batches and
 report delivery outcomes; failed attempts use exponential backoff, while stale claims can be recovered.
 Provider credentials and provider-specific code remain outside the core risk application.
+
+M11 adds a read-only portfolio projection over open transactions and their latest available predictions.
+Exposure is grouped by currency, destination, and risk band; currencies are never summed without an
+explicit conversion source. Stress tests persist their assumptions, exact transaction snapshot, and
+currency-separated results. They calculate illustrative expected loss using exposure, adverse-outcome
+probability, and loss given default, but they cannot mutate assessments or live decisions.

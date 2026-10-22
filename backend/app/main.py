@@ -14,6 +14,7 @@ from backend.app.api import (
     counterparties,
     documents,
     monitoring,
+    portfolio,
     screening,
     system,
     transactions,
@@ -67,6 +68,7 @@ app.include_router(documents.router, prefix="/api")
 app.include_router(screening.router, prefix="/api")
 app.include_router(assessments.router, prefix="/api")
 app.include_router(monitoring.router, prefix="/api")
+app.include_router(portfolio.router, prefix="/api")
 app.include_router(system.router, prefix="/api")
 
 FRONTEND_DIR = Path(__file__).resolve().parents[2] / "frontend"

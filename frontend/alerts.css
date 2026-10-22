@@ -108,6 +108,11 @@
   border: 0;
 }
 
+.stress-form {
+  display: grid;
+  gap: 1rem;
+}
+
 @media (max-width: 600px) {
   .alert-card {
     grid-template-columns: 1fr;

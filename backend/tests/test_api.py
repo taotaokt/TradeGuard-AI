@@ -11,6 +11,8 @@ def test_health(client):
     assert "Check model drift" in frontend.text
     assert "Operations" in frontend.text
     assert "Configure defaults" in frontend.text
+    assert "OPEN EXPOSURE BY CURRENCY" in frontend.text
+    assert "Run stress test" in frontend.text
 
     alert_styles = client.get("/static/alerts.css")
     assert alert_styles.status_code == 200

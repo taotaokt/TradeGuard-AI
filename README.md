@@ -26,13 +26,15 @@ The current version can:
 - let reviewers approve, approve with conditions, request information, reject, or maintain a compliance hold;
 - provide a responsive browser workspace, dashboard, review queue, and audit trail;
 - export a two-page PDF assessment report with evidence and limitations;
-- create monitoring alerts when a new screening run finds candidate matches; and
+- create monitoring alerts when a new screening run finds candidate matches;
 - assign, acknowledge, resolve, dismiss, or launch a versioned reassessment from an alert;
 - run a scheduler-ready portfolio rescreen that skips counterparties already checked against current lists;
-- record payment delays, disputes, losses, cancellations, and on-time outcomes; and
+- record payment delays, disputes, losses, cancellations, and on-time outcomes;
 - create model-monitoring snapshots for prediction shift, low-confidence rate, Brier score, and calibration gap;
-- configure persistent portfolio and model-monitoring schedules with execution history; and
-- queue alert notifications in an idempotent, retryable Outbox for an external delivery worker.
+- configure persistent portfolio and model-monitoring schedules with execution history;
+- queue alert notifications in an idempotent, retryable Outbox for an external delivery worker;
+- aggregate open exposure without mixing currencies;
+- run reproducible downside scenarios without changing live decisions.
 
 The included model is deliberately trained on generated data. It demonstrates a governed ML workflow, not real creditworthiness or production readiness.
 
@@ -50,6 +52,7 @@ See [REQUIREMENTS.md](./REQUIREMENTS.md) for the full product requirements and w
 - [x] M8: monitoring alerts, reviewer ownership, and alert-driven reassessment
 - [x] M9: portfolio rescreening, trade outcomes, and model-drift snapshots
 - [x] M10: persistent schedules, execution history, notification Outbox, and operations dashboard
+- [x] M11: portfolio exposure analytics and reproducible stress testing
 
 ## Run it for the first time
 
@@ -198,6 +201,12 @@ Administrators can use the **Operations** workspace or the API to configure dail
 
 Every newly created alert also writes an idempotent notification record in the same database transaction. A delivery adapter claims work from `POST /api/notifications/claim`, sends it through an approved email or messaging provider, and reports success or failure to `POST /api/notifications/{id}/result`. Failed deliveries use bounded exponential backoff, and abandoned claims become eligible again after 15 minutes. No real external message is sent by this repository.
 
+## Analyze portfolio exposure
+
+The **Portfolio** workspace groups open exposure by currency, destination, and latest risk band. Currencies remain separate throughout the API and interface; the application does not produce a misleading cross-currency total without exchange-rate data.
+
+Risk reviewers can save downside scenarios with exposure growth, probability multipliers, loss-given-default assumptions, unscored-transaction assumptions, and optional country-specific probability add-ons. Each result stores the parameters and exact transaction snapshot used. Stress tests are analytical only: they never modify transactions, assessments, recommendations, or review decisions. See [docs/portfolio-analytics.md](./docs/portfolio-analytics.md).
+
 ## Run the tests
 
 ```bash
@@ -210,7 +219,7 @@ To include coverage:
 python3 -m pytest --cov=backend.app --cov-report=term-missing
 ```
 
-The test suite covers critical API workflows, hard-stop precedence, monitoring-alert lifecycle, alert-driven reassessment, scheduled execution, notification retry behavior, model reproducibility, artifact verification, PDF generation, audit access, and migrations.
+The test suite covers critical API workflows, hard-stop precedence, monitoring-alert lifecycle, alert-driven reassessment, scheduled execution, notification retry behavior, portfolio aggregation, stress-test immutability, model reproducibility, artifact verification, PDF generation, audit access, and migrations.
 
 ## PostgreSQL and Docker
 

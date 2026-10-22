@@ -446,6 +446,20 @@ class NotificationDelivery(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
 
 
+class PortfolioStressTest(Base):
+    __tablename__ = "portfolio_stress_tests"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    name: Mapped[str] = mapped_column(String(160), nullable=False)
+    status: Mapped[str] = mapped_column(String(40), index=True, nullable=False)
+    rationale: Mapped[str] = mapped_column(Text, nullable=False)
+    parameters_json: Mapped[str] = mapped_column(Text, nullable=False)
+    portfolio_snapshot_json: Mapped[str] = mapped_column(Text, nullable=False)
+    result_json: Mapped[str] = mapped_column(Text, nullable=False)
+    created_by_id: Mapped[str] = mapped_column(ForeignKey("users.id"), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+
+
 class SupportingDocument(TimestampMixin, Base):
     __tablename__ = "supporting_documents"
     __table_args__ = (

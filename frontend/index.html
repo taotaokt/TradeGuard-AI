@@ -32,6 +32,7 @@
         <div class="brand"><span class="brand-mark small">TG</span><span>TradeGuard</span></div>
         <nav aria-label="Primary navigation">
           <button class="nav-item active" data-view="dashboard">Overview</button>
+          <button class="nav-item" data-view="portfolio">Portfolio</button>
           <button class="nav-item" data-view="counterparties">Counterparties</button>
           <button class="nav-item" data-view="transactions">Transactions</button>
           <button class="nav-item" data-view="reviews">Review queue</button>
@@ -58,6 +59,27 @@
           <div class="panel-grid">
             <article class="panel hero-panel"><p class="eyebrow">WORKFLOW</p><h2>One evidence trail, five deliberate steps.</h2><div class="workflow"><span>Validate</span><i></i><span>Screen</span><i></i><span>Rules</span><i></i><span>Model</span><i></i><span>Decide</span></div></article>
             <article class="panel"><p class="eyebrow">GUARDRAIL</p><h2>Compliance always wins.</h2><p class="muted">A confirmed concern is a hard stop. Model probability cannot clear or override it.</p></article>
+          </div>
+        </section>
+
+        <section id="portfolio" class="view hidden">
+          <div class="section-head"><p>Currency-safe exposure analytics and non-decisioning downside scenarios.</p><button id="refresh-portfolio" class="secondary">Refresh</button></div>
+          <div id="portfolio-metrics" class="metric-grid operations-metrics"></div>
+          <div class="operations-grid">
+            <article class="panel"><p class="eyebrow">OPEN EXPOSURE BY CURRENCY</p><div class="table-wrap embedded-table"><table><thead><tr><th>Currency</th><th>Transactions</th><th>Exposure</th></tr></thead><tbody id="portfolio-currency-rows"></tbody></table></div></article>
+            <article class="panel"><p class="eyebrow">OPEN EXPOSURE BY RISK BAND</p><div class="table-wrap embedded-table"><table><thead><tr><th>Risk band</th><th>Currency</th><th>Exposure</th></tr></thead><tbody id="portfolio-risk-rows"></tbody></table></div></article>
+          </div>
+          <div class="operations-grid operations-history">
+            <form id="stress-test-form" class="panel stress-form">
+              <p class="eyebrow">NEW STRESS TEST</p>
+              <label>Scenario name<input name="name" value="Trade downside scenario" required /></label>
+              <div class="two-col"><label>Probability multiplier<input name="probability_multiplier" type="number" min="1" max="5" step="0.05" value="1.50" required /></label><label>Exposure growth %<input name="exposure_growth_percentage" type="number" min="0" max="100" step="0.1" value="10" required /></label></div>
+              <div class="two-col"><label>Loss given default<input name="loss_given_default" type="number" min="0" max="1" step="0.05" value="0.60" required /></label><label>Unscored probability<input name="unscored_probability" type="number" min="0" max="1" step="0.05" value="0.15" required /></label></div>
+              <div class="two-col"><label>Country codes<input name="selected_countries" placeholder="CN, US" /></label><label>Country PD addon<input name="country_probability_addon" type="number" min="0" max="0.5" step="0.01" value="0" required /></label></div>
+              <label>Rationale<textarea name="rationale" required>Evaluate a fictional downside scenario without changing live decisions.</textarea></label>
+              <button class="primary" type="submit">Run stress test</button>
+            </form>
+            <article class="panel"><p class="eyebrow">RECENT SCENARIOS</p><div id="stress-test-cards" class="compact-list"></div></article>
           </div>
         </section>
 
