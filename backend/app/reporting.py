@@ -205,9 +205,24 @@ def build_assessment_pdf(assessment: Assessment) -> bytes:
         story.append(Paragraph("No triggered reason codes.", normal))
     if decision:
         story.extend([Spacer(1, 6), Paragraph("<b>Decision summary:</b> " + decision.summary, normal)])
-        conditions = _safe_json(decision.conditions_json, [])
-        for condition in conditions:
-            story.append(Paragraph("- Condition: " + condition, normal))
+        if decision.conditions:
+            for condition in decision.conditions:
+                evidence = condition.evidence_document_id or "not attached"
+                story.append(
+                    Paragraph(
+                        "- Condition: {} | Status: {} | Due: {}Z | Evidence: {}".format(
+                            condition.description,
+                            condition.status.replace("_", " ").title(),
+                            condition.due_at.isoformat(),
+                            evidence,
+                        ),
+                        normal,
+                    )
+                )
+        else:
+            conditions = _safe_json(decision.conditions_json, [])
+            for condition in conditions:
+                story.append(Paragraph("- Condition: " + condition, normal))
 
     story.extend(
         [

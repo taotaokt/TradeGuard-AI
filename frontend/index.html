@@ -39,6 +39,7 @@
           <button class="nav-item" data-view="alerts">Alert center</button>
           <button id="operations-nav" class="nav-item" data-view="operations">Operations</button>
           <button id="data-quality-nav" class="nav-item" data-view="data-quality">Data quality</button>
+          <button id="conditions-nav" class="nav-item" data-view="conditions">Conditions</button>
           <button class="nav-item" data-view="assessment">Assessment</button>
           <button class="nav-item" data-view="audit">Audit trail</button>
         </nav>
@@ -119,6 +120,12 @@
           <div class="section-head"><p>Repeatable evidence, screening, list-freshness, and outcome checks with an auditable remediation queue.</p><div class="row-actions"><button id="run-data-quality" class="primary">Run scan</button><button id="refresh-data-quality" class="secondary">Refresh</button></div></div>
           <div id="data-quality-metrics" class="metric-grid operations-metrics"></div>
           <article class="panel operations-history"><p class="eyebrow">OPEN REMEDIATION ITEMS</p><div id="data-quality-cards" class="card-list"></div></article>
+        </section>
+
+        <section id="conditions" class="view hidden">
+          <div class="section-head"><p>Track evidence-backed obligations created by approvals with conditions.</p><button id="refresh-conditions" class="secondary">Refresh</button></div>
+          <div id="condition-metrics" class="metric-grid operations-metrics"></div>
+          <article class="panel operations-history"><p class="eyebrow">CONDITION REGISTER</p><div id="condition-cards" class="card-list"></div></article>
         </section>
 
         <section id="assessment" class="view hidden">

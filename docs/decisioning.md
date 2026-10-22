@@ -42,7 +42,9 @@ credit denial without a separate data-governance, legal, validation, and approva
 
 Risk and compliance queues are separated by the `required_role` field. Reviewers must provide a
 rationale. `APPROVE_WITH_CONDITIONS` also requires at least one written condition. The automatic and
-final recommendations are both retained, and a different final result is marked as an override.
+final recommendations are both retained, and a different final result is marked as an override. Each
+condition becomes a due-dated record owned by a reviewer role. It can be fulfilled only with active
+transaction evidence, waived with authority and rationale, or reopened with optimistic version checks.
 
 ## Demonstration thresholds
 

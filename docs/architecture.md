@@ -76,3 +76,10 @@ versioned rules for missing evidence, stale counterparty screening, stale list v
 statements, and overdue outcomes. Stable issue keys make scans idempotent: recurring findings update an
 existing remediation item, corrected conditions auto-resolve, and reappearing conditions reopen. Human
 acknowledgement, resolution, and dismissal remain role-scoped and are written to the audit trail.
+
+M13 replaces the previous JSON-only approval-condition output with first-class workflow records while
+retaining the original JSON snapshot for historical compatibility. Each condition belongs to one
+decision and assessment, has an owner role, due date, lifecycle status, and optimistic-lock version.
+Fulfillment requires an active document attached to the assessed transaction; waivers and reopenings
+require a rationale and create audit events. Overdue open conditions are consumed by the M12 scanner,
+so operational obligations and data-quality remediation share one explainable control loop.

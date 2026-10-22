@@ -45,7 +45,7 @@ def assessment_detail_query():
     return select(Assessment).options(
         selectinload(Assessment.steps),
         selectinload(Assessment.rule_results),
-        selectinload(Assessment.decision),
+        selectinload(Assessment.decision).selectinload(Decision.conditions),
         selectinload(Assessment.review_case),
         selectinload(Assessment.prediction),
     )

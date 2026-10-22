@@ -11,6 +11,7 @@ from backend.app.models import (
     Counterparty,
     DataQualityIssue,
     DataQualityScan,
+    DecisionCondition,
     Outcome,
     ScreeningList,
     ScreeningListVersion,
@@ -22,7 +23,7 @@ from backend.app.models import (
 from backend.app.schemas import DataQualityScanRequest
 
 
-RULESET_VERSION = "dq-v1"
+RULESET_VERSION = "dq-v2"
 
 
 @dataclass(frozen=True)
@@ -202,6 +203,30 @@ def _findings(db: Session, payload: DataQualityScanRequest, now: datetime) -> Li
                     },
                 )
             )
+
+    overdue_conditions = db.scalars(
+        select(DecisionCondition).where(
+            DecisionCondition.status == "open",
+            DecisionCondition.due_at < now,
+        )
+    )
+    for condition in overdue_conditions:
+        findings.append(
+            Finding(
+                "decision_condition",
+                condition.id,
+                "DQ_DECISION_CONDITION_OVERDUE",
+                "high",
+                condition.owner_role,
+                "Approval condition is overdue",
+                {
+                    "assessment_id": condition.assessment_id,
+                    "description": condition.description,
+                    "due_at": condition.due_at.isoformat(),
+                    "assigned_to_id": condition.assigned_to_id,
+                },
+            )
+        )
     return findings
 
 

@@ -1,5 +1,5 @@
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
@@ -10,7 +10,7 @@ from backend.app.audit import record_audit_event
 from backend.app.db import get_db
 from backend.app.decisioning import assessment_detail_query
 from backend.app.deps import get_current_user, require_roles
-from backend.app.models import Assessment, ReviewCase, RuleVersion, User
+from backend.app.models import Assessment, DecisionCondition, ReviewCase, RuleVersion, User
 from backend.app.schemas import (
     AssessmentDetail,
     ReviewCaseRead,
@@ -119,6 +119,21 @@ def decide_review(
     decision.reviewed_at = datetime.utcnow()
     decision.is_override = payload.decision != decision.automatic_recommendation
 
+    if payload.decision == "APPROVE_WITH_CONDITIONS":
+        owner_role = payload.condition_owner_role or review.required_role
+        due_at = datetime.utcnow() + timedelta(days=payload.condition_due_days)
+        for sequence, description in enumerate(payload.conditions, start=1):
+            decision.conditions.append(
+                DecisionCondition(
+                    assessment_id=assessment.id,
+                    sequence=sequence,
+                    description=description.strip(),
+                    owner_role=owner_role,
+                    due_at=due_at,
+                    created_by_id=user.id,
+                )
+            )
+
     review.rationale = payload.rationale.strip()
     review.reviewer_id = user.id
     review.resolved_at = datetime.utcnow()
@@ -153,6 +168,8 @@ def decide_review(
             "is_override": decision.is_override,
             "rationale": decision.rationale,
             "conditions": payload.conditions,
+            "condition_due_days": payload.condition_due_days,
+            "condition_owner_role": payload.condition_owner_role or review.required_role,
         },
     )
     db.commit()

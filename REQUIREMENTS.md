@@ -2,9 +2,9 @@
 
 **Document type:** Product and Software Requirements Specification
 
-**Version:** 1.5
+**Version:** 1.6
 
-**Status:** MVP through M12 data-quality remediation implemented; production validation remains out of scope
+**Status:** MVP through M13 approval-condition tracking implemented; production validation remains out of scope
 
 **Date:** 2026-10-21
 
@@ -635,6 +635,8 @@ POST   /api/data-quality/scans
 GET    /api/data-quality/scans
 GET    /api/data-quality/issues
 POST   /api/data-quality/issues/{id}/actions
+GET    /api/conditions
+POST   /api/conditions/{id}/actions
 
 GET    /api/admin/lists
 POST   /api/admin/lists/{id}/versions
@@ -960,6 +962,7 @@ CreditEva/
 | M7 — Portfolio/research | Deployment, demo, bilingual summary, research report | Public-safe demo and reproducible experiment package complete |
 | M8–M11 — Monitoring and analytics | Alert workflow, outcomes, drift, scheduler, Outbox, portfolio stress tests | Repeatable operational and analytical workflows pass automated tests |
 | M12 — Data quality | Repeatable controls and role-owned remediation queue | Findings deduplicate, conditions auto-resolve, and human actions are audited |
+| M13 — Approval conditions | Due-dated obligations, ownership, evidence, and lifecycle | Conditions require evidence to fulfill, use optimistic locking, and surface when overdue |
 
 ---
 

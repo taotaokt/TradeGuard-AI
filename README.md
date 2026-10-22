@@ -36,7 +36,9 @@ The current version can:
 - aggregate open exposure without mixing currencies;
 - run reproducible downside scenarios without changing live decisions;
 - scan for missing evidence, stale screening, stale lists, and overdue outcomes; and
-- track remediation items without duplicating them across repeated scans.
+- track remediation items without duplicating them across repeated scans;
+- convert approval conditions into owned, due-dated workflow records; and
+- require transaction evidence before a condition can be marked fulfilled.
 
 The included model is deliberately trained on generated data. It demonstrates a governed ML workflow, not real creditworthiness or production readiness.
 
@@ -56,6 +58,7 @@ See [REQUIREMENTS.md](./REQUIREMENTS.md) for the full product requirements and w
 - [x] M10: persistent schedules, execution history, notification Outbox, and operations dashboard
 - [x] M11: portfolio exposure analytics and reproducible stress testing
 - [x] M12: data-quality scanning and auditable remediation workflow
+- [x] M13: approval-condition ownership, evidence, and lifecycle tracking
 
 ## Run it for the first time
 
@@ -215,6 +218,12 @@ Risk reviewers can save downside scenarios with exposure growth, probability mul
 Open **Data quality** in the browser workspace and select **Run scan**. The default scan checks whether records have supporting evidence, counterparties have recent screening, list sources have current versions, transactions state their end use, and outcomes are overdue.
 
 Each condition receives a stable issue key. Repeated scans update the same remediation item instead of creating duplicates. When the underlying condition disappears, the next scan closes the item automatically; assigned reviewers can also acknowledge, resolve, or dismiss an item with a rationale. See [docs/data-quality.md](./docs/data-quality.md).
+
+## Track approval conditions
+
+When a reviewer selects `APPROVE_WITH_CONDITIONS`, each written condition becomes a structured workflow record with an owner role, due date, status, and version. Open **Conditions** to review obligations and their deadlines.
+
+A condition can only be fulfilled with an active supporting document belonging to the assessed transaction. Authorized reviewers may waive or reopen a condition with a rationale. Overdue open conditions appear automatically in the next data-quality scan, and the PDF report shows current condition status and evidence references. See [docs/approval-conditions.md](./docs/approval-conditions.md).
 
 ## Run the tests
 

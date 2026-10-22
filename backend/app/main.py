@@ -12,6 +12,7 @@ from backend.app.api import (
     assessments,
     auth,
     counterparties,
+    conditions,
     data_quality,
     documents,
     monitoring,
@@ -64,6 +65,7 @@ app.add_middleware(
 
 app.include_router(auth.router, prefix="/api")
 app.include_router(counterparties.router, prefix="/api")
+app.include_router(conditions.router, prefix="/api")
 app.include_router(data_quality.router, prefix="/api")
 app.include_router(transactions.router, prefix="/api")
 app.include_router(documents.router, prefix="/api")

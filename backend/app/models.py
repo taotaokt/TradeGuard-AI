@@ -293,6 +293,40 @@ class Decision(TimestampMixin, Base):
     is_override: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
     assessment: Mapped[Assessment] = relationship(back_populates="decision")
+    conditions: Mapped[List["DecisionCondition"]] = relationship(
+        cascade="all, delete-orphan",
+        back_populates="decision",
+        order_by="DecisionCondition.sequence",
+    )
+
+
+class DecisionCondition(TimestampMixin, Base):
+    __tablename__ = "decision_conditions"
+    __table_args__ = (
+        UniqueConstraint("decision_id", "sequence", name="uq_decision_condition_sequence"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    decision_id: Mapped[str] = mapped_column(ForeignKey("decisions.id"), index=True, nullable=False)
+    assessment_id: Mapped[str] = mapped_column(
+        ForeignKey("assessments.id"), index=True, nullable=False
+    )
+    sequence: Mapped[int] = mapped_column(Integer, nullable=False)
+    description: Mapped[str] = mapped_column(Text, nullable=False)
+    owner_role: Mapped[str] = mapped_column(String(50), index=True, nullable=False)
+    assigned_to_id: Mapped[Optional[str]] = mapped_column(ForeignKey("users.id"), index=True)
+    due_at: Mapped[datetime] = mapped_column(DateTime, index=True, nullable=False)
+    status: Mapped[str] = mapped_column(String(40), index=True, default="open", nullable=False)
+    evidence_document_id: Mapped[Optional[str]] = mapped_column(
+        ForeignKey("supporting_documents.id")
+    )
+    completion_rationale: Mapped[Optional[str]] = mapped_column(Text)
+    completed_by_id: Mapped[Optional[str]] = mapped_column(ForeignKey("users.id"))
+    completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
+    created_by_id: Mapped[str] = mapped_column(ForeignKey("users.id"), nullable=False)
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+
+    decision: Mapped[Decision] = relationship(back_populates="conditions")
 
 
 class ReviewCase(TimestampMixin, Base):

@@ -283,6 +283,26 @@ class RuleResultRead(ORMModel):
     created_at: datetime
 
 
+class DecisionConditionRead(ORMModel):
+    id: str
+    decision_id: str
+    assessment_id: str
+    sequence: int
+    description: str
+    owner_role: str
+    assigned_to_id: Optional[str]
+    due_at: datetime
+    status: str
+    evidence_document_id: Optional[str]
+    completion_rationale: Optional[str]
+    completed_by_id: Optional[str]
+    completed_at: Optional[datetime]
+    created_by_id: str
+    version: int
+    created_at: datetime
+    updated_at: datetime
+
+
 class DecisionRead(ORMModel):
     id: str
     automatic_recommendation: str
@@ -297,6 +317,7 @@ class DecisionRead(ORMModel):
     reviewed_by_id: Optional[str]
     reviewed_at: Optional[datetime]
     is_override: bool
+    conditions: List[DecisionConditionRead]
     created_at: datetime
     updated_at: datetime
 
@@ -348,6 +369,26 @@ class ReviewDecision(BaseModel):
     ]
     rationale: str = Field(min_length=10, max_length=4000)
     conditions: List[str] = Field(default_factory=list, max_length=20)
+    condition_due_days: int = Field(default=30, ge=0, le=365)
+    condition_owner_role: Optional[
+        Literal["business_user", "risk_reviewer", "compliance_reviewer"]
+    ] = None
+
+    @field_validator("conditions")
+    @classmethod
+    def validate_conditions(cls, value: List[str]) -> List[str]:
+        cleaned = [item.strip() for item in value]
+        if any(not item for item in cleaned):
+            raise ValueError("conditions cannot contain empty text")
+        return cleaned
+
+
+class DecisionConditionAction(BaseModel):
+    action: Literal["assign", "fulfill", "waive", "reopen"]
+    rationale: str = Field(min_length=5, max_length=4000)
+    expected_version: int = Field(ge=1)
+    assignee_id: Optional[str] = None
+    evidence_document_id: Optional[str] = None
 
 
 class AlertRead(ORMModel):
