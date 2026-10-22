@@ -7,6 +7,7 @@ Use only claims that match the version you can demonstrate.
 - Designed decision precedence that separates compliance hard stops, deterministic policy rules, calibrated commercial-risk estimates, and documented human overrides.
 - Implemented evidence-backed approval-condition tracking with role ownership, due dates, optimistic locking, audit events, and automated overdue controls.
 - Added explainable counterparty entity resolution using normalized multilingual names, aliases, jurisdiction, identifiers, and website domains, with canonical references and human-reviewed outcomes.
+- Built a KYB fact-provenance workflow linking structured company data to URLs or uploaded evidence, with reviewer verification, expiry controls, optimistic locking, audit events, and immutable assessment snapshots.
 - Delivered a responsive no-build web interface, Docker deployment reference, CI migration checks, public demo seeding, and an automated backend test suite with more than 90% statement coverage.
 
 ## Short statement for a master's application

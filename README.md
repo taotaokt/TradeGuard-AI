@@ -40,7 +40,10 @@ The current version can:
 - convert approval conditions into owned, due-dated workflow records;
 - require transaction evidence before a condition can be marked fulfilled;
 - detect potential duplicate counterparties from names, aliases, registration context, and domains; and
-- route unresolved entity-identity concerns to human risk review without automatically merging records.
+- route unresolved entity-identity concerns to human risk review without automatically merging records;
+- capture tax IDs, addresses, ownership, directors, industry codes, and bank details as sourced KYB facts;
+- require a source URL or uploaded counterparty document for every fact; and
+- verify, reject, retire, monitor, and snapshot those facts without overwriting their history.
 
 The included model is deliberately trained on generated data. It demonstrates a governed ML workflow, not real creditworthiness or production readiness.
 
@@ -62,6 +65,7 @@ See [REQUIREMENTS.md](./REQUIREMENTS.md) for the full product requirements and w
 - [x] M12: data-quality scanning and auditable remediation workflow
 - [x] M13: approval-condition ownership, evidence, and lifecycle tracking
 - [x] M14: explainable counterparty duplicate detection and entity review
+- [x] M15: sourced KYB facts, verification lifecycle, expiry controls, and assessment snapshots
 
 ## Run it for the first time
 
@@ -134,9 +138,11 @@ Open `/docs`, then follow these steps:
 2. Select **Authorize** and paste only the token. Swagger will add `Bearer` automatically.
 3. Call `POST /api/counterparties` to create a company.
 4. Call `POST /api/counterparties/{id}/evidence` to upload registration evidence.
-5. Call `POST /api/transactions` to create a transaction.
-6. Call `POST /api/transactions/{id}/documents` to upload a contract or invoice.
-7. Call `POST /api/transactions/{id}/assessments` to run the assessment workflow.
+5. Call `POST /api/counterparties/{id}/facts` to record a sourced company fact.
+6. Call `POST /api/counterparty-facts/{id}/actions` to verify it with a rationale.
+7. Call `POST /api/transactions` to create a transaction.
+8. Call `POST /api/transactions/{id}/documents` to upload a contract or invoice.
+9. Call `POST /api/transactions/{id}/assessments` to run the assessment workflow.
 
 If the transaction is missing an end use or a main transaction party, the API returns the fields that need attention instead of producing a misleading result.
 
@@ -218,7 +224,7 @@ Risk reviewers can save downside scenarios with exposure growth, probability mul
 
 ## Review data quality
 
-Open **Data quality** in the browser workspace and select **Run scan**. The default scan checks whether records have supporting evidence, counterparties have recent screening, list sources have current versions, transactions state their end use, and outcomes are overdue.
+Open **Data quality** in the browser workspace and select **Run scan**. The default scan checks whether records have supporting evidence, counterparty facts are verified and current, counterparties have recent screening, list sources have current versions, transactions state their end use, and outcomes are overdue.
 
 Each condition receives a stable issue key. Repeated scans update the same remediation item instead of creating duplicates. When the underlying condition disappears, the next scan closes the item automatically; assigned reviewers can also acknowledge, resolve, or dismiss an item with a rationale. See [docs/data-quality.md](./docs/data-quality.md).
 
@@ -234,6 +240,12 @@ When a counterparty is created, TradeGuard compares its normalized legal name an
 
 Open **Duplicate review** to classify a candidate as a separate company or a confirmed duplicate. Unresolved and confirmed concerns appear in data-quality review and route new linked assessments to a risk reviewer. A confirmed duplicate retains a canonical counterparty reference so historical screens, trades, and decisions are not silently rewritten. See [docs/entity-resolution.md](./docs/entity-resolution.md).
 
+## Verify sourced KYB facts
+
+Open **KYB facts**, enter a counterparty ID, and add a company fact. Every fact must cite either an HTTP(S) source or an active evidence document already attached to that counterparty. A risk or compliance reviewer can verify, reject, or retire the fact with a rationale; optimistic version checks prevent a stale browser from overwriting newer review work.
+
+The `dq-v4` scan flags facts that remain unverified beyond the configured grace period and verified facts whose validity period has expired. New assessments retain the active fact values, evidence references, verification state, validity dates, and versions in their screening snapshot. This adds provenance without treating an unverified fact as an automatic credit decision. See [docs/fact-provenance.md](./docs/fact-provenance.md).
+
 ## Run the tests
 
 ```bash
@@ -246,7 +258,7 @@ To include coverage:
 python3 -m pytest --cov=backend.app --cov-report=term-missing
 ```
 
-The test suite covers critical API workflows, hard-stop precedence, monitoring-alert lifecycle, alert-driven reassessment, scheduled execution, notification retry behavior, portfolio aggregation, stress-test immutability, data-quality remediation, model reproducibility, artifact verification, PDF generation, audit access, and migrations.
+The test suite covers critical API workflows, hard-stop precedence, monitoring-alert lifecycle, alert-driven reassessment, scheduled execution, notification retry behavior, portfolio aggregation, stress-test immutability, sourced-fact review, data-quality remediation, model reproducibility, artifact verification, PDF generation, audit access, and migrations.
 
 ## PostgreSQL and Docker
 

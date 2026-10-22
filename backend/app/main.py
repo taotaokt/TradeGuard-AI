@@ -16,6 +16,7 @@ from backend.app.api import (
     data_quality,
     documents,
     duplicates,
+    facts,
     monitoring,
     portfolio,
     screening,
@@ -69,6 +70,7 @@ app.include_router(counterparties.router, prefix="/api")
 app.include_router(conditions.router, prefix="/api")
 app.include_router(data_quality.router, prefix="/api")
 app.include_router(duplicates.router, prefix="/api")
+app.include_router(facts.router, prefix="/api")
 app.include_router(transactions.router, prefix="/api")
 app.include_router(documents.router, prefix="/api")
 app.include_router(screening.router, prefix="/api")

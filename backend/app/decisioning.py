@@ -12,6 +12,7 @@ from backend.app.models import (
     Assessment,
     AssessmentStep,
     Counterparty,
+    CounterpartyFact,
     Decision,
     Prediction,
     ReviewCase,
@@ -217,11 +218,44 @@ def _screening_state(db: Session, transaction: TradeTransaction) -> dict:
     duplicate_statuses = {
         item.id: item.duplicate_status for item in counterparties if item is not None
     }
+    facts = (
+        list(
+            db.scalars(
+                select(CounterpartyFact)
+                .where(
+                    CounterpartyFact.counterparty_id.in_(counterparty_ids),
+                    CounterpartyFact.status == "active",
+                )
+                .order_by(CounterpartyFact.counterparty_id, CounterpartyFact.fact_type)
+            )
+        )
+        if counterparty_ids
+        else []
+    )
+    fact_snapshot = [
+        {
+            "id": fact.id,
+            "counterparty_id": fact.counterparty_id,
+            "fact_type": fact.fact_type,
+            "value": fact.value,
+            "verification_status": fact.verification_status,
+            "source_url": fact.source_url,
+            "source_document_id": fact.source_document_id,
+            "valid_from": fact.valid_from,
+            "expires_at": fact.expires_at,
+            "version": fact.version,
+        }
+        for fact in facts
+    ]
     return {
         "counterparty_ids": counterparty_ids,
         "counterparty_statuses": statuses,
         "counterparty_duplicate_statuses": duplicate_statuses,
         "active_list_versions": active_versions,
+        "counterparty_facts": fact_snapshot,
+        "verified_fact_count": sum(
+            fact.verification_status == "verified" for fact in facts
+        ),
         "has_confirmed_hold": any(value == "compliance_hold" for value in statuses.values()),
         "has_possible_match": any(value == "screening_review" for value in statuses.values()),
         "has_duplicate_concern": any(

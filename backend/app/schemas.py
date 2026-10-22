@@ -1,6 +1,7 @@
 from datetime import datetime
 from decimal import Decimal
 from typing import List, Literal, Optional
+from urllib.parse import urlparse
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -141,6 +142,89 @@ class CounterpartyDuplicateResolution(BaseModel):
     classification: Literal["not_duplicate", "confirmed_duplicate"]
     rationale: str = Field(min_length=10, max_length=4000)
     expected_version: int = Field(ge=1)
+
+
+class CounterpartyFactCreate(BaseModel):
+    fact_type: Literal[
+        "tax_identifier",
+        "registered_address",
+        "director",
+        "owner",
+        "beneficial_owner",
+        "industry_code",
+        "bank_account",
+        "other",
+    ]
+    value: str = Field(min_length=1, max_length=2000)
+    source_url: Optional[str] = Field(default=None, max_length=1000)
+    source_document_id: Optional[str] = Field(default=None, max_length=36)
+    valid_from: Optional[datetime] = None
+    expires_at: Optional[datetime] = None
+
+    @field_validator("value")
+    @classmethod
+    def normalize_fact_value(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("value must contain meaningful text")
+        return value
+
+    @field_validator("source_url")
+    @classmethod
+    def validate_source_url(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return None
+        value = value.strip()
+        if not value:
+            return None
+        parsed = urlparse(value)
+        if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+            raise ValueError("source_url must be a complete http or https URL")
+        return value
+
+    @model_validator(mode="after")
+    def validate_provenance(self):
+        if not self.source_url and not self.source_document_id:
+            raise ValueError("source_url or source_document_id is required")
+        if self.valid_from and self.expires_at and self.expires_at <= self.valid_from:
+            raise ValueError("expires_at must be later than valid_from")
+        return self
+
+
+class CounterpartyFactRead(ORMModel):
+    id: str
+    fact_key: str
+    counterparty_id: str
+    fact_type: str
+    value: str
+    normalized_value: str
+    source_url: Optional[str]
+    source_document_id: Optional[str]
+    verification_status: str
+    verification_rationale: Optional[str]
+    verified_by_id: Optional[str]
+    verified_at: Optional[datetime]
+    valid_from: Optional[datetime]
+    expires_at: Optional[datetime]
+    status: str
+    created_by_id: str
+    version: int
+    created_at: datetime
+    updated_at: datetime
+
+
+class CounterpartyFactAction(BaseModel):
+    action: Literal["verify", "reject", "retire"]
+    rationale: str = Field(min_length=10, max_length=4000)
+    expected_version: int = Field(ge=1)
+
+    @field_validator("rationale")
+    @classmethod
+    def validate_rationale(cls, value: str) -> str:
+        value = value.strip()
+        if len(value) < 10:
+            raise ValueError("rationale must contain at least 10 meaningful characters")
+        return value
 
 
 class TransactionPartyCreate(BaseModel):
@@ -702,6 +786,7 @@ class DataQualityScanRequest(BaseModel):
     screening_stale_days: int = Field(default=30, ge=1, le=365)
     list_stale_days: int = Field(default=30, ge=1, le=365)
     outcome_grace_days: int = Field(default=30, ge=0, le=365)
+    fact_verification_grace_days: int = Field(default=7, ge=0, le=365)
 
 
 class DataQualityScanRead(ORMModel):

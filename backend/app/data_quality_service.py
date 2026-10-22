@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from backend.app.audit import record_audit_event
 from backend.app.models import (
     Counterparty,
+    CounterpartyFact,
     DataQualityIssue,
     DataQualityScan,
     DecisionCondition,
@@ -23,7 +24,7 @@ from backend.app.models import (
 from backend.app.schemas import DataQualityScanRequest
 
 
-RULESET_VERSION = "dq-v3"
+RULESET_VERSION = "dq-v4"
 
 
 @dataclass(frozen=True)
@@ -119,6 +120,53 @@ def _findings(db: Session, payload: DataQualityScanRequest, now: datetime) -> Li
                         "last_screened_at": latest.created_at.isoformat(),
                         "stale_after_days": payload.screening_stale_days,
                     },
+                )
+            )
+
+    fact_verification_cutoff = now - timedelta(days=payload.fact_verification_grace_days)
+    active_facts = db.scalars(
+        select(CounterpartyFact).where(CounterpartyFact.status == "active")
+    )
+    for fact in active_facts:
+        details = {
+            "counterparty_id": fact.counterparty_id,
+            "fact_type": fact.fact_type,
+            "source_document_id": fact.source_document_id,
+            "has_source_url": bool(fact.source_url),
+        }
+        if (
+            fact.verification_status == "unverified"
+            and fact.created_at < fact_verification_cutoff
+        ):
+            findings.append(
+                Finding(
+                    "counterparty_fact",
+                    fact.id,
+                    "DQ_COUNTERPARTY_FACT_UNVERIFIED",
+                    "medium",
+                    "risk_reviewer",
+                    "Counterparty fact is awaiting verification",
+                    {
+                        **details,
+                        "created_at": fact.created_at.isoformat(),
+                        "grace_days": payload.fact_verification_grace_days,
+                    },
+                )
+            )
+        if (
+            fact.verification_status == "verified"
+            and fact.expires_at is not None
+            and fact.expires_at < now
+        ):
+            findings.append(
+                Finding(
+                    "counterparty_fact",
+                    fact.id,
+                    "DQ_COUNTERPARTY_FACT_EXPIRED",
+                    "high",
+                    "risk_reviewer",
+                    "Verified counterparty fact has expired",
+                    {**details, "expires_at": fact.expires_at.isoformat()},
                 )
             )
 

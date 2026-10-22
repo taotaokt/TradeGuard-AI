@@ -2,11 +2,11 @@
 
 **Document type:** Product and Software Requirements Specification
 
-**Version:** 1.7
+**Version:** 1.8
 
-**Status:** MVP through M14 counterparty entity resolution implemented; production validation remains out of scope
+**Status:** MVP through M15 KYB fact provenance implemented; production validation remains out of scope
 
-**Date:** 2026-10-21
+**Date:** 2026-10-22
 
 **Primary audience:** Product owner, developer, data scientist, reviewer, admissions or hiring evaluator
 
@@ -175,7 +175,7 @@ flowchart TD
     A[User signs in] --> B{Counterparty exists?}
     B -- No --> C[Create counterparty profile]
     B -- Yes --> D[Select counterparty]
-    C --> E[Enter identifiers, aliases, ownership and addresses]
+    C --> E[Enter sourced identifiers, aliases, ownership and addresses]
     D --> F[Create trade transaction]
     E --> F
     F --> G[Enter product, route, value, payment and end-use data]
@@ -210,12 +210,13 @@ flowchart LR
     A[Create counterparty] --> B[Enter legal identifiers]
     B --> C[Add legal and trading names]
     C --> D[Add addresses, directors and owners]
-    D --> E[Attach registration evidence]
-    E --> F[Screen entity and related parties]
-    F --> G{Identity sufficiently verified?}
-    G -- No --> H[Mark incomplete and request evidence]
-    G -- Yes --> I[Activate counterparty profile]
-    I --> J[Create baseline risk snapshot]
+    D --> E[Attach registration evidence or cite a source URL]
+    E --> F[Verify sourced facts]
+    F --> G[Screen entity and related parties]
+    G --> H{Identity sufficiently verified?}
+    H -- No --> I[Mark incomplete and request evidence]
+    H -- Yes --> J[Activate counterparty profile]
+    J --> K[Create baseline risk snapshot]
 ```
 
 ### 8.3 Restricted-party screening workflow
@@ -367,6 +368,17 @@ No weighted average may reduce a hard-stop result.
 | CP-005 | Each factual field shall support a source reference and verification status. | Must |
 | CP-006 | Potential duplicate counterparties shall trigger a warning. | Should |
 | CP-007 | Archived counterparties shall remain available to auditors. | Must |
+
+### 10.2.1 KYB fact provenance
+
+| ID | Requirement | Priority |
+|---|---|---|
+| KYB-001 | Each structured company fact shall cite a source URL or an active evidence document belonging to the same counterparty. | Must |
+| KYB-002 | Facts shall retain the original value, normalized value, type, validity dates, source reference, creator, and version. | Must |
+| KYB-003 | Authorized reviewers shall verify, reject, or retire a fact with a rationale. | Must |
+| KYB-004 | Fact review shall use optimistic locking and write an audit event. | Must |
+| KYB-005 | Data-quality scans shall flag overdue unverified facts and expired verified facts. | Must |
+| KYB-006 | Assessments shall snapshot active facts and their provenance for later reconstruction. | Must |
 
 ### 10.3 Transaction management
 
@@ -542,6 +554,7 @@ The UI shall not use green styling for a result that still contains an unresolve
 | `User` | Authenticated actor and assigned roles |
 | `Counterparty` | Legal or business entity under assessment |
 | `CounterpartyDuplicateCandidate` | Explainable possible-duplicate pair and human resolution |
+| `CounterpartyFact` | Sourced, versioned company fact with verification and validity state |
 | `CounterpartyAlias` | Alternative, previous, translated, or trading names |
 | `RelatedParty` | Director, owner, beneficial owner, bank beneficiary, consignee, or end user |
 | `Evidence` | Source record, document, URL, snapshot metadata, and verification state |
@@ -595,6 +608,9 @@ POST   /api/counterparties
 GET    /api/counterparties/{id}
 PATCH  /api/counterparties/{id}
 POST   /api/counterparties/{id}/evidence
+GET    /api/counterparties/{id}/facts
+POST   /api/counterparties/{id}/facts
+POST   /api/counterparty-facts/{id}/actions
 POST   /api/counterparties/{id}/screen
 
 GET    /api/transactions
@@ -967,6 +983,7 @@ CreditEva/
 | M12 — Data quality | Repeatable controls and role-owned remediation queue | Findings deduplicate, conditions auto-resolve, and human actions are audited |
 | M13 — Approval conditions | Due-dated obligations, ownership, evidence, and lifecycle | Conditions require evidence to fulfill, use optimistic locking, and surface when overdue |
 | M14 — Entity resolution | Explainable duplicate candidates and canonical references | Similar records route to review; human resolution is versioned and audited |
+| M15 — KYB fact provenance | Structured sourced facts, verification lifecycle, expiry monitoring, and snapshots | Facts require evidence; reviews are versioned and audited; stale states surface in data quality |
 
 ---
 

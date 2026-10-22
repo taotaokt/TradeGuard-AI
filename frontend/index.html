@@ -34,6 +34,7 @@
           <button class="nav-item active" data-view="dashboard">Overview</button>
           <button class="nav-item" data-view="portfolio">Portfolio</button>
           <button class="nav-item" data-view="counterparties">Counterparties</button>
+          <button id="facts-nav" class="nav-item" data-view="facts">KYB facts</button>
           <button id="duplicate-nav" class="nav-item" data-view="duplicates">Duplicate review</button>
           <button class="nav-item" data-view="transactions">Transactions</button>
           <button class="nav-item" data-view="reviews">Review queue</button>
@@ -95,6 +96,24 @@
           <div class="section-head"><p>Resolve explainable entity-match warnings before relying on fragmented company history.</p><button id="refresh-duplicates" class="secondary">Refresh</button></div>
           <div id="duplicate-metrics" class="metric-grid operations-metrics"></div>
           <article class="panel operations-history"><p class="eyebrow">PENDING ENTITY MATCHES</p><div id="duplicate-cards" class="card-list"></div></article>
+        </section>
+
+        <section id="facts" class="view hidden">
+          <div class="section-head"><p>Capture company facts with source evidence, human verification, validity dates, and a complete audit trail.</p></div>
+          <form id="fact-counterparty-form" class="lookup"><input id="fact-counterparty-id" placeholder="Counterparty ID" required /><button class="primary" type="submit">Load facts</button></form>
+          <div id="fact-metrics" class="metric-grid operations-metrics"></div>
+          <div class="operations-grid operations-history">
+            <form id="fact-form" class="panel stress-form">
+              <p class="eyebrow">NEW SOURCED FACT</p>
+              <label>Fact type<select name="fact_type"><option value="tax_identifier">Tax identifier</option><option value="registered_address">Registered address</option><option value="director">Director</option><option value="owner">Owner</option><option value="beneficial_owner">Beneficial owner</option><option value="industry_code">Industry code</option><option value="bank_account">Bank account</option><option value="other">Other</option></select></label>
+              <label>Value<textarea name="value" required></textarea></label>
+              <label>Source URL<input name="source_url" type="url" placeholder="https://registry.example/company/123" /></label>
+              <label>Or evidence document ID<input name="source_document_id" placeholder="Uploaded counterparty evidence ID" /></label>
+              <div class="two-col"><label>Valid from<input name="valid_from" type="datetime-local" /></label><label>Expires at<input name="expires_at" type="datetime-local" /></label></div>
+              <button class="primary" type="submit">Add unverified fact</button>
+            </form>
+            <article class="panel"><p class="eyebrow">FACT REGISTER</p><div id="fact-cards" class="card-list"><p class="muted">Enter a counterparty ID to load its fact register.</p></div></article>
+          </div>
         </section>
 
         <section id="transactions" class="view hidden">

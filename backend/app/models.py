@@ -118,6 +118,34 @@ class CounterpartyDuplicateCandidate(TimestampMixin, Base):
     version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
 
 
+class CounterpartyFact(TimestampMixin, Base):
+    __tablename__ = "counterparty_facts"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    fact_key: Mapped[str] = mapped_column(String(64), unique=True, index=True, nullable=False)
+    counterparty_id: Mapped[str] = mapped_column(
+        ForeignKey("counterparties.id"), index=True, nullable=False
+    )
+    fact_type: Mapped[str] = mapped_column(String(60), index=True, nullable=False)
+    value: Mapped[str] = mapped_column(Text, nullable=False)
+    normalized_value: Mapped[str] = mapped_column(String(500), index=True, nullable=False)
+    source_url: Mapped[Optional[str]] = mapped_column(String(1000))
+    source_document_id: Mapped[Optional[str]] = mapped_column(
+        ForeignKey("supporting_documents.id"), index=True
+    )
+    verification_status: Mapped[str] = mapped_column(
+        String(40), default="unverified", index=True, nullable=False
+    )
+    verification_rationale: Mapped[Optional[str]] = mapped_column(Text)
+    verified_by_id: Mapped[Optional[str]] = mapped_column(ForeignKey("users.id"))
+    verified_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
+    valid_from: Mapped[Optional[datetime]] = mapped_column(DateTime)
+    expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime, index=True)
+    status: Mapped[str] = mapped_column(String(40), default="active", index=True, nullable=False)
+    created_by_id: Mapped[str] = mapped_column(ForeignKey("users.id"), nullable=False)
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+
+
 class TradeTransaction(TimestampMixin, Base):
     __tablename__ = "trade_transactions"
 

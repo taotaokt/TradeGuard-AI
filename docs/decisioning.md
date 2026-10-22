@@ -1,7 +1,7 @@
 # Decisioning workflow
 
 TradeGuard currently runs an assessment synchronously so the workflow is easy to inspect and test.
-Each assessment stores an immutable transaction snapshot, screening-version snapshot, rule version,
+Each assessment stores an immutable transaction snapshot, screening-version and active KYB-fact snapshot, rule version,
 rule checksum, model version, feature snapshot, calibrated prediction, step outputs, triggered rules,
 and an automatic recommendation.
 
@@ -9,6 +9,8 @@ and an automatic recommendation.
 
 1. Validate required transaction information.
 2. Read the screening state of linked counterparties and active list versions.
+   This snapshot also retains each active fact's value, source reference, verification state, validity
+   dates, and version. Facts provide traceability in M15; they do not independently approve a trade.
 3. Evaluate every rule in `config/rules/v1.json`.
 4. Verify and load the registered champion artifact, extract the fixed feature schema, estimate the
    calibrated probability, and record confidence and policy-oriented reason codes.

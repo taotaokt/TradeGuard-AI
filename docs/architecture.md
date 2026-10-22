@@ -90,3 +90,11 @@ number, and website-domain agreement are persisted as review signals. A human ri
 each candidate; confirmed duplicates retain a canonical counterparty reference while both historical
 records remain available. Pending or confirmed identity concerns route linked assessments to review and
 surface in the versioned data-quality ruleset.
+
+M15 adds a structured provenance layer between uploaded evidence and assessment inputs. A
+`CounterpartyFact` stores the original and normalized value, a URL or same-counterparty document
+reference, validity period, verification state, reviewer rationale, and optimistic-lock version.
+Review actions never rewrite the source record silently and all state changes create audit events.
+The `dq-v4` control set monitors overdue verification and expired verified facts. Active fact records
+and their evidence references are frozen into each new assessment's screening snapshot; they currently
+provide reconstruction context and do not bypass screening, rules, or human review.
