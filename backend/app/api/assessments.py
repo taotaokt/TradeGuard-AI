@@ -142,6 +142,7 @@ def decide_review(
         "APPROVE_WITH_CONDITIONS": "approved_with_conditions",
         "REQUEST_INFORMATION": "information_requested",
         "REJECT": "rejected",
+        "STOP": "stopped_by_policy",
         "COMPLIANCE_HOLD": "stopped_for_compliance",
     }
     review.status = review_status[payload.decision]
@@ -151,10 +152,15 @@ def decide_review(
         "APPROVE_WITH_CONDITIONS": "completed",
         "REQUEST_INFORMATION": "information_required",
         "REJECT": "rejected",
+        "STOP": "stopped",
         "COMPLIANCE_HOLD": "compliance_hold",
     }[payload.decision]
     assessment.transaction.status = (
-        "assessed" if payload.decision in {"APPROVE", "APPROVE_WITH_CONDITIONS"} else "under_review"
+        "assessed"
+        if payload.decision in {"APPROVE", "APPROVE_WITH_CONDITIONS"}
+        else "stopped"
+        if payload.decision == "STOP"
+        else "under_review"
     )
     record_audit_event(
         db,

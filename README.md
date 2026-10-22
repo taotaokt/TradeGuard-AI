@@ -44,6 +44,9 @@ The current version can:
 - capture tax IDs, addresses, ownership, directors, industry codes, and bank details as sourced KYB facts;
 - require a source URL or uploaded counterparty document for every fact; and
 - verify, reject, retire, monitor, and snapshot those facts without overwriting their history.
+- create versioned counterparty credit policies by currency;
+- enforce approved exposure limits, maximum payment terms, minimum deposits, and restricted-credit stops; and
+- calculate projected exposure from existing open trades plus the proposed transaction.
 
 The included model is deliberately trained on generated data. It demonstrates a governed ML workflow, not real creditworthiness or production readiness.
 
@@ -66,6 +69,7 @@ See [REQUIREMENTS.md](./REQUIREMENTS.md) for the full product requirements and w
 - [x] M13: approval-condition ownership, evidence, and lifecycle tracking
 - [x] M14: explainable counterparty duplicate detection and entity review
 - [x] M15: sourced KYB facts, verification lifecycle, expiry controls, and assessment snapshots
+- [x] M16: governed counterparty credit policies and transaction-level limit controls
 
 ## Run it for the first time
 
@@ -140,9 +144,10 @@ Open `/docs`, then follow these steps:
 4. Call `POST /api/counterparties/{id}/evidence` to upload registration evidence.
 5. Call `POST /api/counterparties/{id}/facts` to record a sourced company fact.
 6. Call `POST /api/counterparty-facts/{id}/actions` to verify it with a rationale.
-7. Call `POST /api/transactions` to create a transaction.
-8. Call `POST /api/transactions/{id}/documents` to upload a contract or invoice.
-9. Call `POST /api/transactions/{id}/assessments` to run the assessment workflow.
+7. Call `POST /api/counterparties/{id}/credit-policies` and then `POST /api/credit-policies/{id}/actions` to approve a fictional policy limit.
+8. Call `POST /api/transactions` to create a transaction.
+9. Call `POST /api/transactions/{id}/documents` to upload a contract or invoice.
+10. Call `POST /api/transactions/{id}/assessments` to run the assessment workflow.
 
 If the transaction is missing an end use or a main transaction party, the API returns the fields that need attention instead of producing a misleading result.
 
@@ -224,7 +229,7 @@ Risk reviewers can save downside scenarios with exposure growth, probability mul
 
 ## Review data quality
 
-Open **Data quality** in the browser workspace and select **Run scan**. The default scan checks whether records have supporting evidence, counterparty facts are verified and current, counterparties have recent screening, list sources have current versions, transactions state their end use, and outcomes are overdue.
+Open **Data quality** in the browser workspace and select **Run scan**. The default scan checks whether records have supporting evidence, counterparty facts and active credit policies are current, counterparties have recent screening, list sources have current versions, transactions state their end use, and outcomes are overdue.
 
 Each condition receives a stable issue key. Repeated scans update the same remediation item instead of creating duplicates. When the underlying condition disappears, the next scan closes the item automatically; assigned reviewers can also acknowledge, resolve, or dismiss an item with a rationale. See [docs/data-quality.md](./docs/data-quality.md).
 
@@ -244,7 +249,13 @@ Open **Duplicate review** to classify a candidate as a separate company or a con
 
 Open **KYB facts**, enter a counterparty ID, and add a company fact. Every fact must cite either an HTTP(S) source or an active evidence document already attached to that counterparty. A risk or compliance reviewer can verify, reject, or retire the fact with a rationale; optimistic version checks prevent a stale browser from overwriting newer review work.
 
-The `dq-v4` scan flags facts that remain unverified beyond the configured grace period and verified facts whose validity period has expired. New assessments retain the active fact values, evidence references, verification state, validity dates, and versions in their screening snapshot. This adds provenance without treating an unverified fact as an automatic credit decision. See [docs/fact-provenance.md](./docs/fact-provenance.md).
+The `dq-v5` scan flags facts that remain unverified beyond the configured grace period and verified facts whose validity period has expired. New assessments retain the active fact values, evidence references, verification state, validity dates, and versions in their screening snapshot. This adds provenance without treating an unverified fact as an automatic credit decision. See [docs/fact-provenance.md](./docs/fact-provenance.md).
+
+## Apply counterparty credit policies
+
+Open **Credit policies** and load a counterparty. A risk reviewer can create a draft policy for one currency with a credit limit, maximum payment term, minimum deposit, risk tier, rationale, and expiry. Activating a new version automatically retires the previous active version for the same company and currency while retaining its history.
+
+During assessment, TradeGuard calculates unsecured exposure from the requested exposure when supplied, or from transaction value less the deposit. It adds open same-currency exposure for the linked counterparty and compares the projected total with the active policy. Limit, term, and deposit breaches route to risk review; a `restricted` policy produces a hard `STOP`. These are transparent demonstration controls, not validated real-business limits. See [docs/credit-policy.md](./docs/credit-policy.md).
 
 ## Run the tests
 
@@ -258,7 +269,7 @@ To include coverage:
 python3 -m pytest --cov=backend.app --cov-report=term-missing
 ```
 
-The test suite covers critical API workflows, hard-stop precedence, monitoring-alert lifecycle, alert-driven reassessment, scheduled execution, notification retry behavior, portfolio aggregation, stress-test immutability, sourced-fact review, data-quality remediation, model reproducibility, artifact verification, PDF generation, audit access, and migrations.
+The test suite covers critical API workflows, hard-stop precedence, monitoring-alert lifecycle, alert-driven reassessment, scheduled execution, notification retry behavior, portfolio aggregation, stress-test immutability, sourced-fact review, governed credit-policy limits, data-quality remediation, model reproducibility, artifact verification, PDF generation, audit access, and migrations.
 
 ## PostgreSQL and Docker
 

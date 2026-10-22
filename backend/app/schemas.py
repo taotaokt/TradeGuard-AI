@@ -227,6 +227,73 @@ class CounterpartyFactAction(BaseModel):
         return value
 
 
+class CounterpartyCreditPolicyCreate(BaseModel):
+    currency: str = Field(min_length=3, max_length=3)
+    risk_tier: Literal["low", "moderate", "high", "restricted"]
+    credit_limit: Decimal = Field(gt=0, max_digits=18, decimal_places=2)
+    max_payment_terms_days: int = Field(ge=0, le=730)
+    minimum_deposit_percentage: Decimal = Field(
+        ge=0, le=100, max_digits=5, decimal_places=2
+    )
+    rationale: str = Field(min_length=10, max_length=4000)
+    effective_from: Optional[datetime] = None
+    expires_at: datetime
+
+    @field_validator("currency")
+    @classmethod
+    def normalize_policy_currency(cls, value: str) -> str:
+        return value.upper()
+
+    @field_validator("rationale")
+    @classmethod
+    def validate_policy_rationale(cls, value: str) -> str:
+        value = value.strip()
+        if len(value) < 10:
+            raise ValueError("rationale must contain at least 10 meaningful characters")
+        return value
+
+    @model_validator(mode="after")
+    def validate_policy_dates(self):
+        if self.effective_from and self.expires_at <= self.effective_from:
+            raise ValueError("expires_at must be later than effective_from")
+        return self
+
+
+class CounterpartyCreditPolicyRead(ORMModel):
+    id: str
+    counterparty_id: str
+    currency: str
+    policy_version: int
+    status: str
+    risk_tier: str
+    credit_limit: Decimal
+    max_payment_terms_days: int
+    minimum_deposit_percentage: Decimal
+    rationale: str
+    effective_from: datetime
+    expires_at: datetime
+    approved_by_id: Optional[str]
+    approved_at: Optional[datetime]
+    created_by_id: str
+    record_version: int
+    created_at: datetime
+    updated_at: datetime
+
+
+class CounterpartyCreditPolicyAction(BaseModel):
+    action: Literal["activate", "retire"]
+    rationale: str = Field(min_length=10, max_length=4000)
+    expected_record_version: int = Field(ge=1)
+
+    @field_validator("rationale")
+    @classmethod
+    def validate_action_rationale(cls, value: str) -> str:
+        value = value.strip()
+        if len(value) < 10:
+            raise ValueError("rationale must contain at least 10 meaningful characters")
+        return value
+
+
 class TransactionPartyCreate(BaseModel):
     role: str = Field(min_length=2, max_length=40)
     name: str = Field(min_length=2, max_length=300)
@@ -474,6 +541,7 @@ class ReviewDecision(BaseModel):
         "APPROVE_WITH_CONDITIONS",
         "REQUEST_INFORMATION",
         "REJECT",
+        "STOP",
         "COMPLIANCE_HOLD",
     ]
     rationale: str = Field(min_length=10, max_length=4000)

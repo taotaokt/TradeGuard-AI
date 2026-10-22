@@ -146,6 +146,37 @@ class CounterpartyFact(TimestampMixin, Base):
     version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
 
 
+class CounterpartyCreditPolicy(TimestampMixin, Base):
+    __tablename__ = "counterparty_credit_policies"
+    __table_args__ = (
+        UniqueConstraint(
+            "counterparty_id",
+            "currency",
+            "policy_version",
+            name="uq_counterparty_credit_policy_version",
+        ),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    counterparty_id: Mapped[str] = mapped_column(
+        ForeignKey("counterparties.id"), index=True, nullable=False
+    )
+    currency: Mapped[str] = mapped_column(String(3), index=True, nullable=False)
+    policy_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    status: Mapped[str] = mapped_column(String(40), default="draft", index=True, nullable=False)
+    risk_tier: Mapped[str] = mapped_column(String(40), nullable=False)
+    credit_limit: Mapped[Decimal] = mapped_column(Numeric(18, 2), nullable=False)
+    max_payment_terms_days: Mapped[int] = mapped_column(Integer, nullable=False)
+    minimum_deposit_percentage: Mapped[Decimal] = mapped_column(Numeric(5, 2), nullable=False)
+    rationale: Mapped[str] = mapped_column(Text, nullable=False)
+    effective_from: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(DateTime, index=True, nullable=False)
+    approved_by_id: Mapped[Optional[str]] = mapped_column(ForeignKey("users.id"))
+    approved_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
+    created_by_id: Mapped[str] = mapped_column(ForeignKey("users.id"), nullable=False)
+    record_version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+
+
 class TradeTransaction(TimestampMixin, Base):
     __tablename__ = "trade_transactions"
 

@@ -11,6 +11,8 @@ and an automatic recommendation.
 2. Read the screening state of linked counterparties and active list versions.
    This snapshot also retains each active fact's value, source reference, verification state, validity
    dates, and version. Facts provide traceability in M15; they do not independently approve a trade.
+   The same snapshot captures any active same-currency credit policy, current open exposure, proposed
+   exposure, and projected total.
 3. Evaluate every rule in `config/rules/v1.json`.
 4. Verify and load the registered champion artifact, extract the fixed feature schema, estimate the
    calibrated probability, and record confidence and policy-oriented reason codes.
@@ -19,12 +21,13 @@ and an automatic recommendation.
 ## Decision precedence
 
 1. A confirmed compliance concern produces `COMPLIANCE_HOLD`.
-2. A critical deterministic rule produces a hard-stop `REQUEST_INFORMATION` result.
-3. Other missing or inconsistent information produces `REQUEST_INFORMATION`.
-4. An unresolved or confirmed duplicate-counterparty concern produces `REFER`.
-5. Incomplete screening, possible matches, or manual-review rules produce `REFER`.
-6. An unavailable model, an out-of-range input, or a non-low commercial-risk band produces `REFER`.
-7. A transaction with no triggered issue and a low model band produces `APPROVE`.
+2. A restricted active credit policy produces an internal hard `STOP`.
+3. A critical deterministic rule produces a hard-stop `REQUEST_INFORMATION` result.
+4. Other missing or inconsistent information produces `REQUEST_INFORMATION`.
+5. An unresolved or confirmed duplicate-counterparty concern produces `REFER`.
+6. Incomplete screening, possible matches, credit-policy breaches, or manual-review rules produce `REFER`.
+7. An unavailable model, an out-of-range input, or a non-low commercial-risk band produces `REFER`.
+8. A transaction with no triggered issue and a low model band produces `APPROVE`.
 
 A hard stop cannot be changed through the review endpoint. The source concern must be corrected or
 resolved first, followed by a new assessment version. This prevents a favorable future ML score or a
@@ -54,3 +57,6 @@ transaction evidence, waived with authority and rationale, or reopened with opti
 The current payment-term and exposure thresholds are unvalidated portfolio-demo values. They live in
 the versioned JSON configuration so that they are visible and reproducible, but they must not be
 presented as approved family-business policy until reviewed against real trade history and risk limits.
+Counterparty credit policies are likewise explicit human-entered demonstration controls. They require
+documented authority, validated exposure definitions, currency policy, override governance, and legal
+review before real use.

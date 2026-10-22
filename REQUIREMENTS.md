@@ -2,9 +2,9 @@
 
 **Document type:** Product and Software Requirements Specification
 
-**Version:** 1.8
+**Version:** 1.9
 
-**Status:** MVP through M15 KYB fact provenance implemented; production validation remains out of scope
+**Status:** MVP through M16 counterparty credit policy controls implemented; production validation remains out of scope
 
 **Date:** 2026-10-22
 
@@ -380,6 +380,19 @@ No weighted average may reduce a hard-stop result.
 | KYB-005 | Data-quality scans shall flag overdue unverified facts and expired verified facts. | Must |
 | KYB-006 | Assessments shall snapshot active facts and their provenance for later reconstruction. | Must |
 
+### 10.2.2 Counterparty credit policy
+
+| ID | Requirement | Priority |
+|---|---|---|
+| CRD-001 | Risk reviewers shall define versioned counterparty credit policies by currency. | Must |
+| CRD-002 | A policy shall store its credit limit, maximum payment terms, minimum deposit, risk tier, rationale, effective period, and approver. | Must |
+| CRD-003 | Activating a new policy shall retire the previous active policy for the same counterparty and currency without deleting history. | Must |
+| CRD-004 | Assessment shall compare projected same-currency exposure with the active policy limit. | Must |
+| CRD-005 | Projected exposure shall include open recorded exposure plus the proposed transaction exposure. | Must |
+| CRD-006 | Limit, payment-term, and deposit breaches shall produce explicit reason codes and risk review. | Must |
+| CRD-007 | A restricted policy shall create a hard internal `STOP` that a model score cannot clear. | Must |
+| CRD-008 | Active expired policies shall surface in the data-quality workflow. | Must |
+
 ### 10.3 Transaction management
 
 | ID | Requirement | Priority |
@@ -555,6 +568,7 @@ The UI shall not use green styling for a result that still contains an unresolve
 | `Counterparty` | Legal or business entity under assessment |
 | `CounterpartyDuplicateCandidate` | Explainable possible-duplicate pair and human resolution |
 | `CounterpartyFact` | Sourced, versioned company fact with verification and validity state |
+| `CounterpartyCreditPolicy` | Versioned currency-specific limit, terms, deposit, risk tier, and approval |
 | `CounterpartyAlias` | Alternative, previous, translated, or trading names |
 | `RelatedParty` | Director, owner, beneficial owner, bank beneficiary, consignee, or end user |
 | `Evidence` | Source record, document, URL, snapshot metadata, and verification state |
@@ -611,6 +625,9 @@ POST   /api/counterparties/{id}/evidence
 GET    /api/counterparties/{id}/facts
 POST   /api/counterparties/{id}/facts
 POST   /api/counterparty-facts/{id}/actions
+GET    /api/counterparties/{id}/credit-policies
+POST   /api/counterparties/{id}/credit-policies
+POST   /api/credit-policies/{id}/actions
 POST   /api/counterparties/{id}/screen
 
 GET    /api/transactions
@@ -984,6 +1001,7 @@ CreditEva/
 | M13 — Approval conditions | Due-dated obligations, ownership, evidence, and lifecycle | Conditions require evidence to fulfill, use optimistic locking, and surface when overdue |
 | M14 — Entity resolution | Explainable duplicate candidates and canonical references | Similar records route to review; human resolution is versioned and audited |
 | M15 — KYB fact provenance | Structured sourced facts, verification lifecycle, expiry monitoring, and snapshots | Facts require evidence; reviews are versioned and audited; stale states surface in data quality |
+| M16 — Credit policy controls | Versioned counterparty limits, terms, deposit floors, and restricted-credit stops | Assessments snapshot policy, aggregate open exposure, emit reason codes, and preserve approval history |
 
 ---
 

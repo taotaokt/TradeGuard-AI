@@ -12,6 +12,7 @@ from backend.app.models import (
     Assessment,
     AssessmentStep,
     Counterparty,
+    CounterpartyCreditPolicy,
     CounterpartyFact,
     Decision,
     Prediction,
@@ -20,6 +21,7 @@ from backend.app.models import (
     RuleVersion,
     ScreeningList,
     TradeTransaction,
+    TransactionParty,
     User,
 )
 from backend.app.ml_service import predict_transaction, register_model_version
@@ -180,6 +182,158 @@ def evaluate_rules(config: dict, transaction: TradeTransaction) -> List[dict]:
     return results
 
 
+def _transaction_credit_exposure(transaction: TradeTransaction) -> Decimal:
+    if transaction.requested_credit_exposure is not None:
+        return Decimal(transaction.requested_credit_exposure)
+    unsecured_share = max(
+        Decimal("0"),
+        Decimal("1") - (Decimal(transaction.deposit_percentage) / Decimal("100")),
+    )
+    return (Decimal(transaction.amount) * unsecured_share).quantize(Decimal("0.01"))
+
+
+def _credit_policy_state(
+    db: Session,
+    transaction: TradeTransaction,
+    counterparty_ids: List[str],
+) -> dict:
+    if not counterparty_ids:
+        return {"policies": [], "missing_counterparty_ids": []}
+
+    now = datetime.utcnow()
+    policies = list(
+        db.scalars(
+            select(CounterpartyCreditPolicy)
+            .where(
+                CounterpartyCreditPolicy.counterparty_id.in_(counterparty_ids),
+                CounterpartyCreditPolicy.currency == transaction.currency,
+                CounterpartyCreditPolicy.status == "active",
+                CounterpartyCreditPolicy.effective_from <= now,
+                CounterpartyCreditPolicy.expires_at > now,
+            )
+            .order_by(CounterpartyCreditPolicy.policy_version.desc())
+        )
+    )
+    current_by_counterparty = {}
+    for policy in policies:
+        current_by_counterparty.setdefault(policy.counterparty_id, policy)
+
+    proposed_exposure = _transaction_credit_exposure(transaction)
+    snapshots = []
+    for counterparty_id, policy in current_by_counterparty.items():
+        existing_transactions = list(
+            db.scalars(
+                select(TradeTransaction)
+                .join(TransactionParty)
+                .where(
+                    TransactionParty.counterparty_id == counterparty_id,
+                    TradeTransaction.id != transaction.id,
+                    TradeTransaction.currency == transaction.currency,
+                    TradeTransaction.status.notin_({"completed", "stopped"}),
+                )
+                .distinct()
+            )
+        )
+        current_exposure = sum(
+            (_transaction_credit_exposure(item) for item in existing_transactions),
+            Decimal("0"),
+        )
+        snapshots.append(
+            {
+                "id": policy.id,
+                "counterparty_id": counterparty_id,
+                "currency": policy.currency,
+                "policy_version": policy.policy_version,
+                "risk_tier": policy.risk_tier,
+                "credit_limit": policy.credit_limit,
+                "max_payment_terms_days": policy.max_payment_terms_days,
+                "minimum_deposit_percentage": policy.minimum_deposit_percentage,
+                "effective_from": policy.effective_from,
+                "expires_at": policy.expires_at,
+                "current_exposure": current_exposure,
+                "proposed_exposure": proposed_exposure,
+                "projected_exposure": current_exposure + proposed_exposure,
+            }
+        )
+    return {
+        "policies": snapshots,
+        "missing_counterparty_ids": sorted(
+            set(counterparty_ids).difference(current_by_counterparty)
+        ),
+    }
+
+
+def evaluate_credit_policies(policy_state: dict, transaction: TradeTransaction) -> List[dict]:
+    results = []
+    for policy in policy_state["policies"]:
+        rule_version = "credit-policy-v{}".format(policy["policy_version"])
+        common_inputs = {
+            "credit_policy_id": policy["id"],
+            "counterparty_id": policy["counterparty_id"],
+            "currency": policy["currency"],
+            "policy_version": policy["policy_version"],
+        }
+        if policy["risk_tier"] == "restricted":
+            results.append(
+                {
+                    "rule_version": rule_version,
+                    "reason_code": "COUNTERPARTY_CREDIT_RESTRICTED",
+                    "severity": "critical",
+                    "action": "stop",
+                    "explanation": "The active counterparty credit policy prohibits new exposure.",
+                    "inputs": {**common_inputs, "risk_tier": policy["risk_tier"]},
+                }
+            )
+        if policy["projected_exposure"] > policy["credit_limit"]:
+            results.append(
+                {
+                    "rule_version": rule_version,
+                    "reason_code": "CREDIT_LIMIT_EXCEEDED",
+                    "severity": "high",
+                    "action": "manual_review",
+                    "explanation": "Existing plus proposed exposure exceeds the active counterparty credit limit.",
+                    "inputs": {
+                        **common_inputs,
+                        "current_exposure": policy["current_exposure"],
+                        "proposed_exposure": policy["proposed_exposure"],
+                        "projected_exposure": policy["projected_exposure"],
+                        "credit_limit": policy["credit_limit"],
+                    },
+                }
+            )
+        if transaction.payment_terms_days > policy["max_payment_terms_days"]:
+            results.append(
+                {
+                    "rule_version": rule_version,
+                    "reason_code": "PAYMENT_TERMS_EXCEED_POLICY",
+                    "severity": "high",
+                    "action": "manual_review",
+                    "explanation": "Requested payment terms exceed the active counterparty policy.",
+                    "inputs": {
+                        **common_inputs,
+                        "payment_terms_days": transaction.payment_terms_days,
+                        "maximum_days": policy["max_payment_terms_days"],
+                    },
+                }
+            )
+        if transaction.deposit_percentage < policy["minimum_deposit_percentage"]:
+            results.append(
+                {
+                    "rule_version": rule_version,
+                    "reason_code": "DEPOSIT_BELOW_POLICY",
+                    "severity": "high",
+                    "action": "manual_review",
+                    "explanation": "Requested deposit is below the active counterparty policy.",
+                    "inputs": {
+                        **common_inputs,
+                        "deposit_percentage": transaction.deposit_percentage,
+                        "minimum_percentage": policy["minimum_deposit_percentage"],
+                    },
+                }
+            )
+    return results
+
+
 def _add_step(
     assessment: Assessment,
     *,
@@ -247,6 +401,7 @@ def _screening_state(db: Session, transaction: TradeTransaction) -> dict:
         }
         for fact in facts
     ]
+    credit_policy_state = _credit_policy_state(db, transaction, counterparty_ids)
     return {
         "counterparty_ids": counterparty_ids,
         "counterparty_statuses": statuses,
@@ -256,6 +411,7 @@ def _screening_state(db: Session, transaction: TradeTransaction) -> dict:
         "verified_fact_count": sum(
             fact.verification_status == "verified" for fact in facts
         ),
+        "credit_policy_state": credit_policy_state,
         "has_confirmed_hold": any(value == "compliance_hold" for value in statuses.values()),
         "has_possible_match": any(value == "screening_review" for value in statuses.values()),
         "has_duplicate_concern": any(
@@ -278,6 +434,12 @@ def _recommend(screening: dict, rules: List[dict], prediction: dict = None) -> T
             "COMPLIANCE_HOLD",
             True,
             "A linked counterparty has a confirmed compliance concern. This state cannot be overridden by a risk score.",
+        )
+    if any(item["action"] == "stop" for item in rules):
+        return (
+            "STOP",
+            True,
+            "The active counterparty credit policy prohibits additional exposure.",
         )
     if critical_rules:
         return (
@@ -357,10 +519,11 @@ def orchestrate_assessment(
 
     assessment.current_step = "rules"
     evaluations = evaluate_rules(config, transaction)
+    evaluations.extend(evaluate_credit_policies(screening["credit_policy_state"], transaction))
     for result in evaluations:
         assessment.rule_results.append(
             RuleResult(
-                rule_version=config["version"],
+                rule_version=result.get("rule_version", config["version"]),
                 reason_code=result["reason_code"],
                 severity=result["severity"],
                 action=result["action"],
@@ -455,6 +618,22 @@ def orchestrate_assessment(
                 "commercial_credit": prediction["risk_band"] if prediction else "unavailable",
                 "country_logistics": "not_evaluated",
                 "portfolio_concentration": "not_evaluated",
+                "counterparty_credit_policy": (
+                    "breached"
+                    if any(
+                        item["reason_code"]
+                        in {
+                            "COUNTERPARTY_CREDIT_RESTRICTED",
+                            "CREDIT_LIMIT_EXCEEDED",
+                            "PAYMENT_TERMS_EXCEED_POLICY",
+                            "DEPOSIT_BELOW_POLICY",
+                        }
+                        for item in evaluations
+                    )
+                    else "within_policy"
+                    if screening["credit_policy_state"]["policies"]
+                    else "not_configured"
+                ),
             }
         ),
     )
@@ -471,6 +650,7 @@ def orchestrate_assessment(
         "APPROVE": "completed",
         "REFER": "pending_review",
         "REQUEST_INFORMATION": "information_required",
+        "STOP": "stopped",
         "COMPLIANCE_HOLD": "compliance_hold",
     }
     assessment.status = status_by_recommendation[recommendation]
@@ -484,6 +664,12 @@ def orchestrate_assessment(
         inputs={"precedence": "compliance > critical rules > missing info > review > approve"},
         output={"recommendation": recommendation, "hard_stop": hard_stop, "summary": summary},
     )
-    transaction.status = "assessed" if recommendation == "APPROVE" else "under_review"
+    transaction.status = (
+        "assessed"
+        if recommendation == "APPROVE"
+        else "stopped"
+        if recommendation == "STOP"
+        else "under_review"
+    )
     db.flush()
     return assessment

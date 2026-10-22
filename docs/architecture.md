@@ -95,6 +95,14 @@ M15 adds a structured provenance layer between uploaded evidence and assessment 
 `CounterpartyFact` stores the original and normalized value, a URL or same-counterparty document
 reference, validity period, verification state, reviewer rationale, and optimistic-lock version.
 Review actions never rewrite the source record silently and all state changes create audit events.
-The `dq-v4` control set monitors overdue verification and expired verified facts. Active fact records
+The `dq-v5` control set monitors overdue verification and expired verified facts. Active fact records
 and their evidence references are frozen into each new assessment's screening snapshot; they currently
 provide reconstruction context and do not bypass screening, rules, or human review.
+
+M16 adds a governed commercial-policy boundary. Risk reviewers create immutable semantic policy
+versions by counterparty and currency, while a separate record version protects lifecycle actions from
+stale updates. Activation retires the prior active version without deleting it. Assessment snapshots
+the selected policy and computes projected exposure from existing open same-currency transactions plus
+the proposal. Limit, term, and deposit breaches become deterministic reason codes; a restricted policy
+creates an internal hard stop before model output is considered. Expired active policies surface through
+the `dq-v5` control set.

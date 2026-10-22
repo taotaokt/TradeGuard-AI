@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from backend.app.audit import record_audit_event
 from backend.app.models import (
     Counterparty,
+    CounterpartyCreditPolicy,
     CounterpartyFact,
     DataQualityIssue,
     DataQualityScan,
@@ -24,7 +25,7 @@ from backend.app.models import (
 from backend.app.schemas import DataQualityScanRequest
 
 
-RULESET_VERSION = "dq-v4"
+RULESET_VERSION = "dq-v5"
 
 
 @dataclass(frozen=True)
@@ -169,6 +170,30 @@ def _findings(db: Session, payload: DataQualityScanRequest, now: datetime) -> Li
                     {**details, "expires_at": fact.expires_at.isoformat()},
                 )
             )
+
+    expired_credit_policies = db.scalars(
+        select(CounterpartyCreditPolicy).where(
+            CounterpartyCreditPolicy.status == "active",
+            CounterpartyCreditPolicy.expires_at < now,
+        )
+    )
+    for policy in expired_credit_policies:
+        findings.append(
+            Finding(
+                "counterparty_credit_policy",
+                policy.id,
+                "DQ_CREDIT_POLICY_EXPIRED",
+                "high",
+                "risk_reviewer",
+                "Active counterparty credit policy has expired",
+                {
+                    "counterparty_id": policy.counterparty_id,
+                    "currency": policy.currency,
+                    "policy_version": policy.policy_version,
+                    "expires_at": policy.expires_at.isoformat(),
+                },
+            )
+        )
 
     list_cutoff = now - timedelta(days=payload.list_stale_days)
     for screening_list in db.scalars(select(ScreeningList)):
