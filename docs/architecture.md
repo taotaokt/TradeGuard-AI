@@ -70,3 +70,9 @@ Exposure is grouped by currency, destination, and risk band; currencies are neve
 explicit conversion source. Stress tests persist their assumptions, exact transaction snapshot, and
 currency-separated results. They calculate illustrative expected loss using exposure, adverse-outcome
 probability, and loss given default, but they cannot mutate assessments or live decisions.
+
+M12 adds a repeatable data-quality control layer over existing operational records. Each scan evaluates
+versioned rules for missing evidence, stale counterparty screening, stale list versions, missing end-use
+statements, and overdue outcomes. Stable issue keys make scans idempotent: recurring findings update an
+existing remediation item, corrected conditions auto-resolve, and reappearing conditions reopen. Human
+acknowledgement, resolution, and dismissal remain role-scoped and are written to the audit trail.

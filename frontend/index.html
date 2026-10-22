@@ -38,6 +38,7 @@
           <button class="nav-item" data-view="reviews">Review queue</button>
           <button class="nav-item" data-view="alerts">Alert center</button>
           <button id="operations-nav" class="nav-item" data-view="operations">Operations</button>
+          <button id="data-quality-nav" class="nav-item" data-view="data-quality">Data quality</button>
           <button class="nav-item" data-view="assessment">Assessment</button>
           <button class="nav-item" data-view="audit">Audit trail</button>
         </nav>
@@ -112,6 +113,12 @@
             <article class="panel"><p class="eyebrow">NOTIFICATION OUTBOX</p><div class="table-wrap embedded-table"><table><thead><tr><th>Status</th><th>Role</th><th>Attempts</th><th>Created</th></tr></thead><tbody id="notification-rows"></tbody></table></div></article>
           </div>
           <article class="panel operations-history"><p class="eyebrow">RECENT EXECUTIONS</p><div class="table-wrap embedded-table"><table><thead><tr><th>Started</th><th>Status</th><th>Result</th><th>Error</th></tr></thead><tbody id="execution-rows"></tbody></table></div></article>
+        </section>
+
+        <section id="data-quality" class="view hidden">
+          <div class="section-head"><p>Repeatable evidence, screening, list-freshness, and outcome checks with an auditable remediation queue.</p><div class="row-actions"><button id="run-data-quality" class="primary">Run scan</button><button id="refresh-data-quality" class="secondary">Refresh</button></div></div>
+          <div id="data-quality-metrics" class="metric-grid operations-metrics"></div>
+          <article class="panel operations-history"><p class="eyebrow">OPEN REMEDIATION ITEMS</p><div id="data-quality-cards" class="card-list"></div></article>
         </section>
 
         <section id="assessment" class="view hidden">

@@ -632,6 +632,50 @@ class PortfolioStressTestRead(ORMModel):
     created_at: datetime
 
 
+class DataQualityScanRequest(BaseModel):
+    screening_stale_days: int = Field(default=30, ge=1, le=365)
+    list_stale_days: int = Field(default=30, ge=1, le=365)
+    outcome_grace_days: int = Field(default=30, ge=0, le=365)
+
+
+class DataQualityScanRead(ORMModel):
+    id: str
+    status: str
+    ruleset_version: str
+    parameters_json: str
+    counters_json: str
+    initiated_by_id: str
+    started_at: datetime
+    completed_at: Optional[datetime]
+
+
+class DataQualityIssueRead(ORMModel):
+    id: str
+    issue_key: str
+    detected_by_scan_id: str
+    entity_type: str
+    entity_id: str
+    code: str
+    severity: str
+    required_role: str
+    title: str
+    details_json: str
+    status: str
+    assigned_to_id: Optional[str]
+    resolution_rationale: Optional[str]
+    resolved_by_id: Optional[str]
+    resolved_at: Optional[datetime]
+    first_seen_at: datetime
+    last_seen_at: datetime
+    version: int
+
+
+class DataQualityIssueAction(BaseModel):
+    action: Literal["assign", "acknowledge", "resolve", "dismiss"]
+    rationale: str = Field(min_length=5, max_length=4000)
+    assignee_id: Optional[str] = None
+
+
 class RuleVersionRead(ORMModel):
     id: str
     version: str

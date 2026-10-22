@@ -460,6 +460,44 @@ class PortfolioStressTest(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
 
 
+class DataQualityScan(Base):
+    __tablename__ = "data_quality_scans"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    status: Mapped[str] = mapped_column(String(40), index=True, nullable=False)
+    ruleset_version: Mapped[str] = mapped_column(String(50), nullable=False)
+    parameters_json: Mapped[str] = mapped_column(Text, nullable=False)
+    counters_json: Mapped[str] = mapped_column(Text, default="{}", nullable=False)
+    initiated_by_id: Mapped[str] = mapped_column(ForeignKey("users.id"), nullable=False)
+    started_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
+
+
+class DataQualityIssue(Base):
+    __tablename__ = "data_quality_issues"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    issue_key: Mapped[str] = mapped_column(String(220), unique=True, index=True, nullable=False)
+    detected_by_scan_id: Mapped[str] = mapped_column(
+        ForeignKey("data_quality_scans.id"), index=True, nullable=False
+    )
+    entity_type: Mapped[str] = mapped_column(String(60), index=True, nullable=False)
+    entity_id: Mapped[str] = mapped_column(String(100), index=True, nullable=False)
+    code: Mapped[str] = mapped_column(String(100), index=True, nullable=False)
+    severity: Mapped[str] = mapped_column(String(30), index=True, nullable=False)
+    required_role: Mapped[str] = mapped_column(String(50), nullable=False)
+    title: Mapped[str] = mapped_column(String(240), nullable=False)
+    details_json: Mapped[str] = mapped_column(Text, default="{}", nullable=False)
+    status: Mapped[str] = mapped_column(String(40), index=True, nullable=False)
+    assigned_to_id: Mapped[Optional[str]] = mapped_column(ForeignKey("users.id"), index=True)
+    resolution_rationale: Mapped[Optional[str]] = mapped_column(Text)
+    resolved_by_id: Mapped[Optional[str]] = mapped_column(ForeignKey("users.id"))
+    resolved_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
+    first_seen_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    last_seen_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+
+
 class SupportingDocument(TimestampMixin, Base):
     __tablename__ = "supporting_documents"
     __table_args__ = (

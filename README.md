@@ -34,7 +34,9 @@ The current version can:
 - configure persistent portfolio and model-monitoring schedules with execution history;
 - queue alert notifications in an idempotent, retryable Outbox for an external delivery worker;
 - aggregate open exposure without mixing currencies;
-- run reproducible downside scenarios without changing live decisions.
+- run reproducible downside scenarios without changing live decisions;
+- scan for missing evidence, stale screening, stale lists, and overdue outcomes; and
+- track remediation items without duplicating them across repeated scans.
 
 The included model is deliberately trained on generated data. It demonstrates a governed ML workflow, not real creditworthiness or production readiness.
 
@@ -53,6 +55,7 @@ See [REQUIREMENTS.md](./REQUIREMENTS.md) for the full product requirements and w
 - [x] M9: portfolio rescreening, trade outcomes, and model-drift snapshots
 - [x] M10: persistent schedules, execution history, notification Outbox, and operations dashboard
 - [x] M11: portfolio exposure analytics and reproducible stress testing
+- [x] M12: data-quality scanning and auditable remediation workflow
 
 ## Run it for the first time
 
@@ -207,6 +210,12 @@ The **Portfolio** workspace groups open exposure by currency, destination, and l
 
 Risk reviewers can save downside scenarios with exposure growth, probability multipliers, loss-given-default assumptions, unscored-transaction assumptions, and optional country-specific probability add-ons. Each result stores the parameters and exact transaction snapshot used. Stress tests are analytical only: they never modify transactions, assessments, recommendations, or review decisions. See [docs/portfolio-analytics.md](./docs/portfolio-analytics.md).
 
+## Review data quality
+
+Open **Data quality** in the browser workspace and select **Run scan**. The default scan checks whether records have supporting evidence, counterparties have recent screening, list sources have current versions, transactions state their end use, and outcomes are overdue.
+
+Each condition receives a stable issue key. Repeated scans update the same remediation item instead of creating duplicates. When the underlying condition disappears, the next scan closes the item automatically; assigned reviewers can also acknowledge, resolve, or dismiss an item with a rationale. See [docs/data-quality.md](./docs/data-quality.md).
+
 ## Run the tests
 
 ```bash
@@ -219,7 +228,7 @@ To include coverage:
 python3 -m pytest --cov=backend.app --cov-report=term-missing
 ```
 
-The test suite covers critical API workflows, hard-stop precedence, monitoring-alert lifecycle, alert-driven reassessment, scheduled execution, notification retry behavior, portfolio aggregation, stress-test immutability, model reproducibility, artifact verification, PDF generation, audit access, and migrations.
+The test suite covers critical API workflows, hard-stop precedence, monitoring-alert lifecycle, alert-driven reassessment, scheduled execution, notification retry behavior, portfolio aggregation, stress-test immutability, data-quality remediation, model reproducibility, artifact verification, PDF generation, audit access, and migrations.
 
 ## PostgreSQL and Docker
 

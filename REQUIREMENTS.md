@@ -2,9 +2,9 @@
 
 **Document type:** Product and Software Requirements Specification
 
-**Version:** 1.4
+**Version:** 1.5
 
-**Status:** MVP through M11 portfolio analytics implemented; production validation remains out of scope
+**Status:** MVP through M12 data-quality remediation implemented; production validation remains out of scope
 
 **Date:** 2026-10-21
 
@@ -631,6 +631,10 @@ GET    /api/portfolio/summary
 POST   /api/portfolio/stress-tests
 GET    /api/portfolio/stress-tests
 GET    /api/portfolio/stress-tests/{id}
+POST   /api/data-quality/scans
+GET    /api/data-quality/scans
+GET    /api/data-quality/issues
+POST   /api/data-quality/issues/{id}/actions
 
 GET    /api/admin/lists
 POST   /api/admin/lists/{id}/versions
@@ -954,6 +958,8 @@ CreditEva/
 | M5 — ML baseline | Logistic baseline, candidate model, evaluation, model card | Reproducible training and inference; calibrated result returned |
 | M6 — Product completion | Dashboard, reports, audit log | End-to-end acceptance scenarios pass |
 | M7 — Portfolio/research | Deployment, demo, bilingual summary, research report | Public-safe demo and reproducible experiment package complete |
+| M8–M11 — Monitoring and analytics | Alert workflow, outcomes, drift, scheduler, Outbox, portfolio stress tests | Repeatable operational and analytical workflows pass automated tests |
+| M12 — Data quality | Repeatable controls and role-owned remediation queue | Findings deduplicate, conditions auto-resolve, and human actions are audited |
 
 ---
 
