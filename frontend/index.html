@@ -38,6 +38,7 @@
           <button id="credit-policies-nav" class="nav-item" data-view="credit-policies">Credit policies</button>
           <button id="duplicate-nav" class="nav-item" data-view="duplicates">Duplicate review</button>
           <button class="nav-item" data-view="transactions">Transactions</button>
+          <button id="receivables-nav" class="nav-item" data-view="receivables">Receivables</button>
           <button class="nav-item" data-view="reviews">Review queue</button>
           <button class="nav-item" data-view="alerts">Alert center</button>
           <button id="operations-nav" class="nav-item" data-view="operations">Operations</button>
@@ -138,6 +139,22 @@
         <section id="transactions" class="view hidden">
           <div class="section-head"><p>Capture commercial terms and submit a reproducible assessment.</p><button class="primary" data-dialog="transaction-dialog">New transaction</button></div>
           <div class="table-wrap"><table><thead><tr><th>Reference</th><th>Route</th><th>Amount</th><th>Status</th><th></th></tr></thead><tbody id="transaction-rows"></tbody></table></div>
+        </section>
+
+        <section id="receivables" class="view hidden">
+          <div class="section-head"><p>Track invoices, outstanding balances, due dates, and payment history for credit sales.</p><button id="refresh-receivables" class="secondary">Refresh</button></div>
+          <div id="receivable-metrics" class="metric-grid operations-metrics"></div>
+          <div class="operations-grid operations-history">
+            <form id="receivable-form" class="panel stress-form">
+              <p class="eyebrow">OPEN RECEIVABLE</p>
+              <div class="two-col"><label>Transaction ID<input name="transaction_id" required /></label><label>Counterparty ID<input name="counterparty_id" required /></label></div>
+              <div class="two-col"><label>Invoice reference<input name="invoice_reference" required /></label><label>Invoice amount<input name="invoice_amount" type="number" min="0.01" step="0.01" required /></label></div>
+              <div class="two-col"><label>Issued at<input name="issued_at" type="datetime-local" required /></label><label>Due at<input name="due_at" type="datetime-local" required /></label></div>
+              <label>Notes<textarea name="notes" placeholder="Optional commercial context"></textarea></label>
+              <button class="primary" type="submit">Open receivable</button>
+            </form>
+            <article class="panel"><p class="eyebrow">RECEIVABLE REGISTER</p><div id="receivable-cards" class="card-list"></div></article>
+          </div>
         </section>
 
         <section id="reviews" class="view hidden">

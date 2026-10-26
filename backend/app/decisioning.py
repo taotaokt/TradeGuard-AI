@@ -20,6 +20,7 @@ from backend.app.models import (
     RuleResult,
     RuleVersion,
     ScreeningList,
+    TradeReceivable,
     TradeTransaction,
     TransactionParty,
     User,
@@ -234,10 +235,26 @@ def _credit_policy_state(
                 .distinct()
             )
         )
-        current_exposure = sum(
-            (_transaction_credit_exposure(item) for item in existing_transactions),
-            Decimal("0"),
-        )
+        transaction_ids = [item.id for item in existing_transactions]
+        receivables_by_transaction = {}
+        if transaction_ids:
+            receivables_by_transaction = {
+                item.transaction_id: item
+                for item in db.scalars(
+                    select(TradeReceivable).where(
+                        TradeReceivable.transaction_id.in_(transaction_ids)
+                    )
+                )
+            }
+        receivable_exposure = Decimal("0")
+        estimated_uninvoiced_exposure = Decimal("0")
+        for item in existing_transactions:
+            receivable = receivables_by_transaction.get(item.id)
+            if receivable is not None:
+                receivable_exposure += Decimal(receivable.outstanding_amount)
+            else:
+                estimated_uninvoiced_exposure += _transaction_credit_exposure(item)
+        current_exposure = receivable_exposure + estimated_uninvoiced_exposure
         snapshots.append(
             {
                 "id": policy.id,
@@ -251,6 +268,12 @@ def _credit_policy_state(
                 "effective_from": policy.effective_from,
                 "expires_at": policy.expires_at,
                 "current_exposure": current_exposure,
+                "receivable_exposure": receivable_exposure,
+                "estimated_uninvoiced_exposure": estimated_uninvoiced_exposure,
+                "open_receivable_count": sum(
+                    receivable.status != "paid"
+                    for receivable in receivables_by_transaction.values()
+                ),
                 "proposed_exposure": proposed_exposure,
                 "projected_exposure": current_exposure + proposed_exposure,
             }

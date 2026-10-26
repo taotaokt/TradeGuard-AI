@@ -29,6 +29,10 @@ One observed outcome can be recorded for each transaction:
 
 An outcome remains distinct from the earlier model prediction. Delays of 30 days or more, disputes, and material losses create risk-review alerts. A loss requires both an amount and currency. Corrections are intentionally not exposed in the current API; production use requires a controlled amendment workflow rather than overwriting history.
 
+The receivables workflow can create the payment outcome automatically. A full settlement on or before
+the due date produces `paid_on_time`; a later settlement produces `delayed` with the calculated number
+of past-due days. An existing manually recorded outcome is never overwritten.
+
 ## Drift snapshots
 
 `POST /api/monitoring/drift-snapshots` evaluates a bounded recent window for the registered champion model. It records:

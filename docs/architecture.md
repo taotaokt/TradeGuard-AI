@@ -95,7 +95,7 @@ M15 adds a structured provenance layer between uploaded evidence and assessment 
 `CounterpartyFact` stores the original and normalized value, a URL or same-counterparty document
 reference, validity period, verification state, reviewer rationale, and optimistic-lock version.
 Review actions never rewrite the source record silently and all state changes create audit events.
-The `dq-v5` control set monitors overdue verification and expired verified facts. Active fact records
+The `dq-v6` control set monitors overdue verification and expired verified facts. Active fact records
 and their evidence references are frozen into each new assessment's screening snapshot; they currently
 provide reconstruction context and do not bypass screening, rules, or human review.
 
@@ -105,4 +105,12 @@ stale updates. Activation retires the prior active version without deleting it. 
 the selected policy and computes projected exposure from existing open same-currency transactions plus
 the proposal. Limit, term, and deposit breaches become deterministic reason codes; a restricted policy
 creates an internal hard stop before model output is considered. Expired active policies surface through
-the `dq-v5` control set.
+the `dq-v6` control set.
+
+M17 adds an operational bridge between a proposed trade and its observed cash collection. A
+`TradeReceivable` stores the invoice amount, current outstanding balance, due date, status, and
+optimistic-lock version; immutable `ReceivablePayment` rows preserve individual receipts. Partial
+payments reduce the balance used by subsequent credit-policy assessments. Full settlement completes
+the transaction and creates an observed payment outcome, while severe lateness reuses the existing
+alert and notification path. The `dq-v6` scanner owns overdue-balance remediation and closes the issue
+when the balance is settled.

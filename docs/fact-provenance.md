@@ -17,7 +17,7 @@ M15 turns key company information into structured, source-backed records. A fact
 - A document source must be active and belong to the same counterparty.
 - Review actions use optimistic locking so stale updates receive a conflict.
 - Creation, verification, rejection, and retirement write audit events.
-- `dq-v5` flags unverified facts after a configurable grace period and verified facts after expiry.
+- `dq-v6` flags unverified facts after a configurable grace period and verified facts after expiry.
 - Fact values can be sensitive. Production deployment needs field-level authorization, encryption, retention rules, source licensing, and privacy review before real bank or ownership data is stored.
 
 Facts add traceability to the assessment record. They do not replace official screening, independent document verification, deterministic policy, or accountable human judgment.

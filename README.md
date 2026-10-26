@@ -39,14 +39,17 @@ The current version can:
 - track remediation items without duplicating them across repeated scans;
 - convert approval conditions into owned, due-dated workflow records;
 - require transaction evidence before a condition can be marked fulfilled;
-- detect potential duplicate counterparties from names, aliases, registration context, and domains; and
+- detect potential duplicate counterparties from names, aliases, registration context, and domains;
 - route unresolved entity-identity concerns to human risk review without automatically merging records;
 - capture tax IDs, addresses, ownership, directors, industry codes, and bank details as sourced KYB facts;
-- require a source URL or uploaded counterparty document for every fact; and
-- verify, reject, retire, monitor, and snapshot those facts without overwriting their history.
+- require a source URL or uploaded counterparty document for every fact;
+- verify, reject, retire, monitor, and snapshot those facts without overwriting their history;
 - create versioned counterparty credit policies by currency;
-- enforce approved exposure limits, maximum payment terms, minimum deposits, and restricted-credit stops; and
-- calculate projected exposure from existing open trades plus the proposed transaction.
+- enforce approved exposure limits, maximum payment terms, minimum deposits, and restricted-credit stops;
+- calculate projected exposure from existing open trades plus the proposed transaction;
+- open one invoice-backed receivable per transaction and record partial or full payments;
+- surface overdue balances through the data-quality workflow; and
+- use actual outstanding receivable balances in subsequent credit-limit assessments.
 
 The included model is deliberately trained on generated data. It demonstrates a governed ML workflow, not real creditworthiness or production readiness.
 
@@ -70,6 +73,7 @@ See [REQUIREMENTS.md](./REQUIREMENTS.md) for the full product requirements and w
 - [x] M14: explainable counterparty duplicate detection and entity review
 - [x] M15: sourced KYB facts, verification lifecycle, expiry controls, and assessment snapshots
 - [x] M16: governed counterparty credit policies and transaction-level limit controls
+- [x] M17: trade receivables, partial payments, aging controls, and balance-aware exposure
 
 ## Run it for the first time
 
@@ -249,13 +253,19 @@ Open **Duplicate review** to classify a candidate as a separate company or a con
 
 Open **KYB facts**, enter a counterparty ID, and add a company fact. Every fact must cite either an HTTP(S) source or an active evidence document already attached to that counterparty. A risk or compliance reviewer can verify, reject, or retire the fact with a rationale; optimistic version checks prevent a stale browser from overwriting newer review work.
 
-The `dq-v5` scan flags facts that remain unverified beyond the configured grace period and verified facts whose validity period has expired. New assessments retain the active fact values, evidence references, verification state, validity dates, and versions in their screening snapshot. This adds provenance without treating an unverified fact as an automatic credit decision. See [docs/fact-provenance.md](./docs/fact-provenance.md).
+The `dq-v6` scan flags facts that remain unverified beyond the configured grace period and verified facts whose validity period has expired. New assessments retain the active fact values, evidence references, verification state, validity dates, and versions in their screening snapshot. This adds provenance without treating an unverified fact as an automatic credit decision. See [docs/fact-provenance.md](./docs/fact-provenance.md).
 
 ## Apply counterparty credit policies
 
 Open **Credit policies** and load a counterparty. A risk reviewer can create a draft policy for one currency with a credit limit, maximum payment term, minimum deposit, risk tier, rationale, and expiry. Activating a new version automatically retires the previous active version for the same company and currency while retaining its history.
 
-During assessment, TradeGuard calculates unsecured exposure from the requested exposure when supplied, or from transaction value less the deposit. It adds open same-currency exposure for the linked counterparty and compares the projected total with the active policy. Limit, term, and deposit breaches route to risk review; a `restricted` policy produces a hard `STOP`. These are transparent demonstration controls, not validated real-business limits. See [docs/credit-policy.md](./docs/credit-policy.md).
+During assessment, TradeGuard uses the actual unpaid balance when an open trade has a receivable. For trades not yet invoiced, it estimates unsecured exposure from the requested exposure or transaction value less the deposit. It compares that same-currency total plus the proposal with the active policy. Limit, term, and deposit breaches route to risk review; a `restricted` policy produces a hard `STOP`. These are transparent demonstration controls, not validated real-business limits. See [docs/credit-policy.md](./docs/credit-policy.md).
+
+## Track invoices and payments
+
+Open **Receivables** after creating a transaction. Record the invoice reference, linked counterparty, amount, issue time, and due time. The register shows open, partially paid, overdue, and paid items without combining different currencies.
+
+Use **Record payment** for each bank receipt. The API rejects stale edits, duplicate payment references, payments before the invoice date, and amounts above the remaining balance. Partial payments reduce the outstanding balance used by later credit-policy assessments. A final payment marks the transaction complete and creates a paid-on-time or delayed outcome; a delay of at least 30 days also creates a risk-review alert. The next `dq-v6` scan automatically closes the overdue-receivable issue after settlement. See [docs/receivables.md](./docs/receivables.md).
 
 ## Run the tests
 
@@ -269,7 +279,7 @@ To include coverage:
 python3 -m pytest --cov=backend.app --cov-report=term-missing
 ```
 
-The test suite covers critical API workflows, hard-stop precedence, monitoring-alert lifecycle, alert-driven reassessment, scheduled execution, notification retry behavior, portfolio aggregation, stress-test immutability, sourced-fact review, governed credit-policy limits, data-quality remediation, model reproducibility, artifact verification, PDF generation, audit access, and migrations.
+The test suite covers critical API workflows, hard-stop precedence, monitoring-alert lifecycle, alert-driven reassessment, scheduled execution, notification retry behavior, portfolio aggregation, stress-test immutability, sourced-fact review, governed credit-policy limits, receivable settlement, data-quality remediation, model reproducibility, artifact verification, PDF generation, audit access, and migrations.
 
 ## PostgreSQL and Docker
 

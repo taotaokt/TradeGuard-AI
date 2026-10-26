@@ -18,21 +18,26 @@ For each linked counterparty with a current policy in the transaction currency, 
 transaction exposure = requested credit exposure, when supplied
 otherwise transaction exposure = amount × (1 − deposit percentage)
 
-projected exposure = open recorded same-currency exposure + proposed exposure
+current exposure = actual outstanding receivable balances
+                 + estimated exposure for open trades not yet invoiced
+
+projected exposure = current exposure + proposed exposure
 ```
 
-Completed and policy-stopped transactions are excluded from existing exposure. Draft and review-stage
-transactions are included conservatively until a fuller commitment and settlement lifecycle is added.
+Completed and policy-stopped transactions are excluded from existing exposure. An invoice-backed trade
+uses its remaining balance, so each partial payment reduces later policy calculations. An open trade
+without a receivable remains conservatively estimated from its requested or unsecured transaction value.
 
-The assessment snapshots the policy and all three exposure values. It emits:
+The assessment snapshots the policy, receivable exposure, estimated uninvoiced exposure, proposed
+exposure, and projected total. It emits:
 
 - `CREDIT_LIMIT_EXCEEDED` when projected exposure is above the approved limit;
 - `PAYMENT_TERMS_EXCEED_POLICY` when requested terms are too long;
 - `DEPOSIT_BELOW_POLICY` when the deposit is too small; and
 - `COUNTERPARTY_CREDIT_RESTRICTED` when the active policy prohibits new exposure.
 
-The first three signals route the transaction to risk review. A restricted policy produces a hard internal `STOP` before the model score is considered. A risk reviewer may confirm that same `STOP`, but cannot override it; the policy must be changed and the transaction reassessed. An expired active policy produces `DQ_CREDIT_POLICY_EXPIRED` under `dq-v5`.
+The first three signals route the transaction to risk review. A restricted policy produces a hard internal `STOP` before the model score is considered. A risk reviewer may confirm that same `STOP`, but cannot override it; the policy must be changed and the transaction reassessed. An expired active policy produces `DQ_CREDIT_POLICY_EXPIRED` under `dq-v6`.
 
 ## Limitations
 
-The current exposure definition is deliberately transparent and does not model settlements, partial shipments, collateral, guarantees, insurance, foreign-exchange conversion, legal entity groups, or revolving facilities. Before family-business use, the company must define when exposure begins and ends, who can approve or override limits, which currencies can be aggregated, how overdue receivables are treated, and how policy evidence is retained. The included thresholds are fictional and must not be treated as validated credit advice.
+The current exposure definition is deliberately transparent and does not model partial shipments, credit notes, collateral, guarantees, insurance, foreign-exchange conversion, legal entity groups, or revolving facilities. Before family-business use, the company must define when exposure begins and ends, who can approve or override limits, which currencies can be aggregated, how overdue receivables are treated, and how policy evidence is retained. The included thresholds are fictional and must not be treated as validated credit advice.

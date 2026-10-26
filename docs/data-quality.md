@@ -5,14 +5,14 @@ TradeGuard's M12 data-quality workflow turns common due-diligence gaps into trac
 ## Workflow
 
 1. An administrator, risk reviewer, or compliance reviewer runs `POST /api/data-quality/scans`.
-2. The `dq-v5` ruleset checks active counterparties, sourced-fact verification and expiry, expired credit policies, entity-resolution state, screening sources, incomplete transactions, and approval conditions.
+2. The `dq-v6` ruleset checks active counterparties, sourced-fact verification and expiry, expired credit policies, overdue receivables, entity-resolution state, screening sources, incomplete transactions, and approval conditions.
 3. Each finding is stored under a stable key composed of rule code, entity type, and entity ID.
 4. Repeated findings update `last_seen_at`; they do not create duplicate issues.
 5. A missing finding closes an open or acknowledged item automatically because its underlying condition has been corrected.
 6. If a resolved condition appears again, the item reopens. A dismissed item remains an explicit human acceptance.
 7. The responsible role can acknowledge, assign, resolve, or dismiss an item with a rationale. Administrators can manage every item.
 
-## Rules in `dq-v5`
+## Rules in `dq-v6`
 
 | Rule | Severity | Owner |
 |---|---|---|
@@ -22,6 +22,7 @@ TradeGuard's M12 data-quality workflow turns common due-diligence gaps into trac
 | Counterparty fact remains unverified beyond the configured grace period | Medium | Risk reviewer |
 | Verified counterparty fact is past its expiry time | High | Risk reviewer |
 | Active counterparty credit policy is past its expiry time | High | Risk reviewer |
+| Open or partially paid trade receivable is past due | High | Risk reviewer |
 | Screening source has no active version or the active version is stale | Critical | Compliance reviewer |
 | Transaction lacks an end-use statement | High | Business user |
 | Transaction has no active supporting evidence | Medium | Risk reviewer |

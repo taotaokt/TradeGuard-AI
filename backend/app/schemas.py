@@ -667,6 +667,77 @@ class OutcomeRead(ORMModel):
     updated_at: datetime
 
 
+class TradeReceivableCreate(BaseModel):
+    counterparty_id: str
+    invoice_reference: str = Field(min_length=2, max_length=120)
+    invoice_amount: Decimal = Field(gt=0, max_digits=18, decimal_places=2)
+    issued_at: datetime
+    due_at: datetime
+    notes: Optional[str] = Field(default=None, max_length=4000)
+
+    @field_validator("invoice_reference")
+    @classmethod
+    def normalize_invoice_reference(cls, value: str) -> str:
+        value = value.strip()
+        if len(value) < 2:
+            raise ValueError("invoice_reference must contain meaningful text")
+        return value
+
+    @model_validator(mode="after")
+    def validate_receivable_dates(self):
+        if self.due_at <= self.issued_at:
+            raise ValueError("due_at must be later than issued_at")
+        return self
+
+
+class ReceivablePaymentCreate(BaseModel):
+    payment_reference: str = Field(min_length=2, max_length=120)
+    amount: Decimal = Field(gt=0, max_digits=18, decimal_places=2)
+    received_at: Optional[datetime] = None
+    notes: Optional[str] = Field(default=None, max_length=4000)
+    expected_version: int = Field(ge=1)
+
+    @field_validator("payment_reference")
+    @classmethod
+    def normalize_payment_reference(cls, value: str) -> str:
+        value = value.strip()
+        if len(value) < 2:
+            raise ValueError("payment_reference must contain meaningful text")
+        return value
+
+
+class ReceivablePaymentRead(ORMModel):
+    id: str
+    receivable_id: str
+    payment_reference: str
+    amount: Decimal
+    received_at: datetime
+    notes: Optional[str]
+    recorded_by_id: str
+    created_at: datetime
+
+
+class TradeReceivableRead(ORMModel):
+    id: str
+    transaction_id: str
+    counterparty_id: str
+    invoice_reference: str
+    invoice_amount: Decimal
+    outstanding_amount: Decimal
+    currency: str
+    issued_at: datetime
+    due_at: datetime
+    status: str
+    aging_status: str
+    days_past_due: int
+    notes: Optional[str]
+    created_by_id: str
+    version: int
+    created_at: datetime
+    updated_at: datetime
+    payments: List[ReceivablePaymentRead]
+
+
 class DriftSnapshotRequest(BaseModel):
     window_days: int = Field(default=90, ge=1, le=730)
     minimum_sample_size: int = Field(default=20, ge=5, le=10000)

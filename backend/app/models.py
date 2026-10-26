@@ -498,6 +498,69 @@ class Outcome(TimestampMixin, Base):
     reported_by_id: Mapped[str] = mapped_column(ForeignKey("users.id"), nullable=False)
 
 
+class TradeReceivable(TimestampMixin, Base):
+    __tablename__ = "trade_receivables"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    transaction_id: Mapped[str] = mapped_column(
+        ForeignKey("trade_transactions.id"), unique=True, index=True, nullable=False
+    )
+    counterparty_id: Mapped[str] = mapped_column(
+        ForeignKey("counterparties.id"), index=True, nullable=False
+    )
+    invoice_reference: Mapped[str] = mapped_column(
+        String(120), unique=True, index=True, nullable=False
+    )
+    invoice_amount: Mapped[Decimal] = mapped_column(Numeric(18, 2), nullable=False)
+    outstanding_amount: Mapped[Decimal] = mapped_column(Numeric(18, 2), nullable=False)
+    currency: Mapped[str] = mapped_column(String(3), index=True, nullable=False)
+    issued_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    due_at: Mapped[datetime] = mapped_column(DateTime, index=True, nullable=False)
+    status: Mapped[str] = mapped_column(String(40), default="open", index=True, nullable=False)
+    notes: Mapped[Optional[str]] = mapped_column(Text)
+    created_by_id: Mapped[str] = mapped_column(ForeignKey("users.id"), nullable=False)
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+
+    payments: Mapped[List["ReceivablePayment"]] = relationship(
+        cascade="all, delete-orphan",
+        back_populates="receivable",
+        order_by="ReceivablePayment.received_at",
+    )
+
+    @property
+    def aging_status(self) -> str:
+        if self.status == "paid":
+            return "paid"
+        if self.due_at < datetime.utcnow() and self.outstanding_amount > 0:
+            return "overdue"
+        return self.status
+
+    @property
+    def days_past_due(self) -> int:
+        if self.status == "paid" or self.due_at >= datetime.utcnow():
+            return 0
+        return max(0, (datetime.utcnow().date() - self.due_at.date()).days)
+
+
+class ReceivablePayment(Base):
+    __tablename__ = "receivable_payments"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    receivable_id: Mapped[str] = mapped_column(
+        ForeignKey("trade_receivables.id"), index=True, nullable=False
+    )
+    payment_reference: Mapped[str] = mapped_column(
+        String(120), unique=True, index=True, nullable=False
+    )
+    amount: Mapped[Decimal] = mapped_column(Numeric(18, 2), nullable=False)
+    received_at: Mapped[datetime] = mapped_column(DateTime, index=True, nullable=False)
+    notes: Mapped[Optional[str]] = mapped_column(Text)
+    recorded_by_id: Mapped[str] = mapped_column(ForeignKey("users.id"), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+
+    receivable: Mapped[TradeReceivable] = relationship(back_populates="payments")
+
+
 class DriftSnapshot(Base):
     __tablename__ = "drift_snapshots"
 

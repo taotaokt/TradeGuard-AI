@@ -19,13 +19,14 @@ from backend.app.models import (
     ScreeningListVersion,
     ScreeningRun,
     SupportingDocument,
+    TradeReceivable,
     TradeTransaction,
     User,
 )
 from backend.app.schemas import DataQualityScanRequest
 
 
-RULESET_VERSION = "dq-v5"
+RULESET_VERSION = "dq-v6"
 
 
 @dataclass(frozen=True)
@@ -191,6 +192,34 @@ def _findings(db: Session, payload: DataQualityScanRequest, now: datetime) -> Li
                     "currency": policy.currency,
                     "policy_version": policy.policy_version,
                     "expires_at": policy.expires_at.isoformat(),
+                },
+            )
+        )
+
+    overdue_receivables = db.scalars(
+        select(TradeReceivable).where(
+            TradeReceivable.status.in_({"open", "partially_paid"}),
+            TradeReceivable.outstanding_amount > 0,
+            TradeReceivable.due_at < now,
+        )
+    )
+    for receivable in overdue_receivables:
+        findings.append(
+            Finding(
+                "trade_receivable",
+                receivable.id,
+                "DQ_RECEIVABLE_OVERDUE",
+                "high",
+                "risk_reviewer",
+                "Trade receivable is overdue",
+                {
+                    "transaction_id": receivable.transaction_id,
+                    "counterparty_id": receivable.counterparty_id,
+                    "invoice_reference": receivable.invoice_reference,
+                    "currency": receivable.currency,
+                    "outstanding_amount": str(receivable.outstanding_amount),
+                    "due_at": receivable.due_at.isoformat(),
+                    "days_past_due": max(0, (now.date() - receivable.due_at.date()).days),
                 },
             )
         )

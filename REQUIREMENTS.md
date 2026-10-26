@@ -2,11 +2,11 @@
 
 **Document type:** Product and Software Requirements Specification
 
-**Version:** 1.9
+**Version:** 2.0
 
-**Status:** MVP through M16 counterparty credit policy controls implemented; production validation remains out of scope
+**Status:** MVP through M17 trade receivables and payment lifecycle implemented; production validation remains out of scope
 
-**Date:** 2026-10-22
+**Date:** 2026-10-26
 
 **Primary audience:** Product owner, developer, data scientist, reviewer, admissions or hiring evaluator
 
@@ -295,6 +295,24 @@ flowchart LR
     N --> O[Monitor drift and outcomes]
 ```
 
+### 8.7 Receivables and payment workflow
+
+```mermaid
+flowchart LR
+    A[Approved or active trade] --> B[Open invoice-backed receivable]
+    B --> C[Track due date and unpaid balance]
+    C --> D{Payment received?}
+    D -- Partial --> E[Reduce outstanding exposure]
+    E --> C
+    D -- Full --> F[Mark receivable paid]
+    F --> G[Complete transaction]
+    G --> H[Create observed payment outcome]
+    C --> I{Past due?}
+    I -- Yes --> J[Create data-quality issue]
+    H --> K{At least 30 days late?}
+    K -- Yes --> L[Create risk-review alert]
+```
+
 ---
 
 ## 9. Decision framework
@@ -404,6 +422,19 @@ No weighted average may reduce a hard-stop result.
 | TX-005 | Users shall attach supporting files and classify document type. | Must |
 | TX-006 | Drafts shall be editable until submitted. | Must |
 | TX-007 | Material edits after submission shall create a new assessment version or require reassessment. | Must |
+
+### 10.3.1 Trade receivables and payments
+
+| ID | Requirement | Priority |
+|---|---|---|
+| AR-001 | An authorized user shall open one receivable for a transaction and linked counterparty. | Must |
+| AR-002 | A receivable shall retain invoice reference, amount, currency, issue time, due time, notes, creator, status, and version. | Must |
+| AR-003 | Users shall record immutable partial or full payments with unique references and receipt times. | Must |
+| AR-004 | Payment writes shall reject stale versions, duplicate references, pre-invoice dates, and overpayments. | Must |
+| AR-005 | Outstanding receivable balances shall replace estimated exposure for the related open transaction in later credit-policy assessments. | Must |
+| AR-006 | Past-due unpaid receivables shall surface as risk-owned data-quality issues. | Must |
+| AR-007 | Full settlement shall complete the transaction and create an observed paid-on-time or delayed outcome when none exists. | Must |
+| AR-008 | A payment at least 30 days late shall create an adverse-outcome alert. | Must |
 
 ### 10.4 Data validation
 
@@ -589,6 +620,8 @@ The UI shall not use green styling for a result that still contains an unresolve
 | `Alert` | Monitoring or reassessment trigger |
 | `AuditEvent` | Append-only action record |
 | `Outcome` | Actual payment, loss, delay, dispute, or completion result |
+| `TradeReceivable` | Invoice-backed amount, outstanding balance, due date, aging state, and version |
+| `ReceivablePayment` | Immutable partial or full receipt linked to a receivable |
 
 ### 12.2 Data lineage requirements
 
@@ -636,6 +669,10 @@ GET    /api/transactions/{id}
 PATCH  /api/transactions/{id}
 POST   /api/transactions/{id}/documents
 POST   /api/transactions/{id}/assessments
+POST   /api/transactions/{id}/receivable
+GET    /api/transactions/{id}/receivable
+GET    /api/receivables
+POST   /api/receivables/{id}/payments
 
 GET    /api/assessments/{id}
 POST   /api/assessments/{id}/retry
@@ -1002,6 +1039,7 @@ CreditEva/
 | M14 — Entity resolution | Explainable duplicate candidates and canonical references | Similar records route to review; human resolution is versioned and audited |
 | M15 — KYB fact provenance | Structured sourced facts, verification lifecycle, expiry monitoring, and snapshots | Facts require evidence; reviews are versioned and audited; stale states surface in data quality |
 | M16 — Credit policy controls | Versioned counterparty limits, terms, deposit floors, and restricted-credit stops | Assessments snapshot policy, aggregate open exposure, emit reason codes, and preserve approval history |
+| M17 — Receivables and payments | Invoice ledger, partial settlement, aging state, automated outcomes, and balance-aware exposure | Payments are version-safe and audited; overdue items surface and resolve; actual unpaid balances drive policy checks |
 
 ---
 
